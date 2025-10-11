@@ -9,9 +9,8 @@ version = '0.0.1-SNAPSHOT'
 description = 'kkambbak Project'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+	sourceCompatibility = '21'
+	targetCompatibility = '21'
 }
 
 configurations {
@@ -41,4 +40,12 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+bootJar {
+	enabled = true
+}
+
+jar {
+	enabled = false
 }
