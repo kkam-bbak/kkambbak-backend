@@ -18,12 +18,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
-        run: chmod +x ./kkambbak/gradlew
+        run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: |
-          cd kkambbak
-          ./gradlew bootJar -x test
+        run: ./gradlew :kkambbak:bootJar -x test
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
