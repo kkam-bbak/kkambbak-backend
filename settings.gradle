@@ -1,0 +1,5 @@
+rootProject.name = 'kkambbak-backend'
+
+include 'kkambbak-core'
+include 'kkambbak-client'
+include 'kkambbak'
