@@ -28,6 +28,10 @@ subprojects {
 		implementation 'org.springframework.boot:spring-boot-starter-web'
 		implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+		// Database drivers
+		runtimeOnly 'org.postgresql:postgresql'
+		runtimeOnly 'com.h2database:h2'
+
 		implementation 'org.apache.commons:commons-lang3:3.17.0'
 
 		// QueryDSL

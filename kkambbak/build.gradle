@@ -22,9 +22,6 @@ dependencies {
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-	// h2 database for testing
-	runtimeOnly 'com.h2database:h2'
-
 	// logbook
 	implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
 
