@@ -1,4 +1,4 @@
-package com.kkambbak.domain.auth.dto;
+package com.kkambbak.domain.auth.eventHandler.dto;
 
 import java.util.Map;
 

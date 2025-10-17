@@ -1,8 +1,7 @@
 package com.kkambbak.domain.auth.eventHandler;
 
 import com.kkambbak.core.entity.user.User;
-import com.kkambbak.domain.auth.dto.AppleOAuth2UserInfo;
-import com.kkambbak.domain.auth.dto.GoogleOAuth2UserInfo;
+import com.kkambbak.domain.auth.eventHandler.dto.GoogleOAuth2UserInfo;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,16 +57,6 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
             GoogleOAuth2UserInfo userInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
             return userService.createOrUpdateUser(
                     "google",
-                    userInfo.getSocialId(),
-                    userInfo.getEmail(),
-                    userInfo.getFirstName(),
-                    userInfo.getLastName(),
-                    userInfo.getProfileImage()
-            );
-        } else if ("apple".equalsIgnoreCase(registrationId)) {
-            AppleOAuth2UserInfo userInfo = new AppleOAuth2UserInfo(oAuth2User.getAttributes());
-            return userService.createOrUpdateUser(
-                    "apple",
                     userInfo.getSocialId(),
                     userInfo.getEmail(),
                     userInfo.getFirstName(),
