@@ -1,4 +1,4 @@
-package com.kkambbak.global.entity;
+package com.kkambbak.core.entity;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
