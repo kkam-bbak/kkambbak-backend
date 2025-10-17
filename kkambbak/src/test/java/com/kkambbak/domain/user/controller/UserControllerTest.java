@@ -9,7 +9,6 @@ import org.springframework.restdocs.payload.JsonFieldType;
 
 import java.util.Map;
 
-import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
