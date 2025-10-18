@@ -21,7 +21,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: ./gradlew :kkambbak:bootJar -x test
+        run: ./gradlew :kkambbak:bootJar
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -50,6 +50,71 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop .
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+
+      - name: Deploy to Naver Cloud
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USERNAME }}
+          key: ${{ secrets.NCP_SSH_KEY }}
+          port: ${{ secrets.NCP_SSH_PORT }}
+          script: |
+            # Docker 로그인
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+            # 최신 이미지 pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+
+            # Redis 컨테이너 시작 (없으면 생성)
+            if [ ! "$(docker ps -q -f name=kkambbak-redis)" ]; then
+              if [ "$(docker ps -aq -f name=kkambbak-redis)" ]; then
+                docker rm kkambbak-redis
+              fi
+              docker run -d \
+                --name kkambbak-redis \
+                --restart unless-stopped \
+                -p 6379:6379 \
+                --network kkambbak-network \
+                redis:7-alpine redis-server --requirepass "${{ secrets.REDIS_PASSWORD }}"
+            fi
+
+            # Docker 네트워크 생성 (없으면)
+            docker network create kkambbak-network || true
+
+            # 기존 애플리케이션 컨테이너 중지 및 제거
+            docker stop kkambbak || true
+            docker rm kkambbak || true
+
+            # 애플리케이션 컨테이너 실행 (포트 80)
+            docker run -d \
+              --name kkambbak \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -p 80:8080 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              -e DB_URL=${{ secrets.DB_URL }} \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_DRIVER=${{ secrets.DB_DRIVER }} \
+              -e JPA_DDL_AUTO=${{ secrets.JPA_DDL_AUTO }} \
+              -e JPA_DIALECT=${{ secrets.JPA_DIALECT }} \
+              -e REDIS_HOST=kkambbak-redis \
+              -e REDIS_PORT=6379 \
+              -e REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -e JWT_ACCESS_TOKEN_EXPIRATION=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }} \
+              -e JWT_REFRESH_TOKEN_EXPIRATION=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }} \
+              -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+              -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+              -e OAUTH2_REDIRECT_URI=${{ secrets.OAUTH2_REDIRECT_URI }} \
+              -e AUTH_KEY=${{ secrets.AUTH_KEY }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+
+            # 사용하지 않는 이미지 정리
+            docker image prune -af
 
       - name: Notify Discord (배포 성공)
         if: success()
