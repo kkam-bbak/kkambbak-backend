@@ -84,4 +84,18 @@ public class User extends BaseEntity {
         this.profileImage = profileImage;
         return this;
     }
+
+    // 게스트 사용자를 Google 계정으로 업그레이드
+    public User upgradeToGoogleUser(AuthProvider provider, String providerId,
+                                    String email, String firstName, String lastName,
+                                    String profileImage) {
+        this.provider = provider;
+        this.providerId = providerId;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.profileImage = profileImage;
+        this.isGuest = false;
+        return this;
+    }
 }

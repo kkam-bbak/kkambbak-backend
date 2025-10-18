@@ -37,32 +37,73 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
         String registrationId = authToken.getAuthorizedClientRegistrationId();
 
-        log.info("OAuth2 Success - provider: {}, attributes: {}", registrationId, oAuth2User.getAttributes());
+        String guestProviderId = (String) request.getSession().getAttribute("guestProviderId");
 
-        User user = processOAuth2User(registrationId, oAuth2User);
+        try {
+            User user = processOAuth2User(registrationId, oAuth2User, guestProviderId);
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+            String accessToken = jwtUtil.generateAccessToken(user.getId());
+            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
-        String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-                .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshToken)
-                .build().toUriString();
+            String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
+                    .queryParam("accessToken", accessToken)
+                    .queryParam("refreshToken", refreshToken)
+                    .build().toUriString();
 
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+        } finally {
+            request.getSession().removeAttribute("guestProviderId");
+        }
     }
 
-    private User processOAuth2User(String registrationId, OAuth2User oAuth2User) {
+    private User processOAuth2User(String registrationId, OAuth2User oAuth2User, String guestProviderId) {
         if ("google".equalsIgnoreCase(registrationId)) {
             GoogleOAuth2UserInfo userInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
-            return userService.createOrUpdateUser(
-                    "google",
-                    userInfo.getSocialId(),
-                    userInfo.getEmail(),
-                    userInfo.getFirstName(),
-                    userInfo.getLastName(),
-                    userInfo.getProfileImage()
-            );
+
+            if (guestProviderId != null && !guestProviderId.isEmpty()) {
+                try {
+                    User upgradedUser = userService.upgradeGuestToGoogle(
+                            guestProviderId,
+                            userInfo.getSocialId(),
+                            userInfo.getEmail(),
+                            userInfo.getFirstName(),
+                            userInfo.getLastName(),
+                            userInfo.getProfileImage()
+                    );
+
+                    if (upgradedUser != null) {
+                        return upgradedUser;
+                    } else {
+                        return userService.createOrUpdateUser(
+                                "google",
+                                userInfo.getSocialId(),
+                                userInfo.getEmail(),
+                                userInfo.getFirstName(),
+                                userInfo.getLastName(),
+                                userInfo.getProfileImage()
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to upgrade guest to Google - guestProviderId: {}, error: {}", guestProviderId, e.getMessage(), e);
+                    return userService.createOrUpdateUser(
+                            "google",
+                            userInfo.getSocialId(),
+                            userInfo.getEmail(),
+                            userInfo.getFirstName(),
+                            userInfo.getLastName(),
+                            userInfo.getProfileImage()
+                    );
+                }
+            } else {
+                return userService.createOrUpdateUser(
+                        "google",
+                        userInfo.getSocialId(),
+                        userInfo.getEmail(),
+                        userInfo.getFirstName(),
+                        userInfo.getLastName(),
+                        userInfo.getProfileImage()
+                );
+            }
         } else {
             throw new IllegalArgumentException("Unsupported OAuth2 provider: " + registrationId);
         }

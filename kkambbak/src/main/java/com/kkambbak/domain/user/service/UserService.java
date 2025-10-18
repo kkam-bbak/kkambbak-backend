@@ -2,7 +2,7 @@ package com.kkambbak.domain.user.service;
 
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
-import com.kkambbak.core.repository.UserRepository;
+import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.exception.InvalidAuthKeyException;
 import com.kkambbak.domain.user.exception.LogoutFailedException;
@@ -102,6 +102,37 @@ public class UserService {
                 .providerId(guestUser.getProviderId())
                 .isGuest(true)
                 .build();
+    }
+
+    @Transactional
+    public User upgradeGuestToGoogle(String guestProviderId, String googleProviderId,
+                                     String email, String firstName, String lastName,
+                                     String profileImage) {
+        User guestUser = userRepository.findByProviderAndProviderIdWithLock(AuthProvider.GUEST, guestProviderId)
+                .orElse(null);
+
+        if (guestUser == null) {
+            log.warn("Guest user not found with providerId: {}", guestProviderId);
+            return null;
+        }
+
+        if (!AuthProvider.GUEST.equals(guestUser.getProvider())) {
+            log.warn("Guest user already upgraded - guestProviderId: {}, current provider: {}", guestProviderId, guestUser.getProvider());
+            return userRepository.save(guestUser.updateFromOAuth2(email, firstName, lastName, profileImage));
+        }
+
+        guestUser.upgradeToGoogleUser(
+                AuthProvider.GOOGLE,
+                googleProviderId,
+                email,
+                firstName,
+                lastName,
+                profileImage
+        );
+
+        User upgradedUser = userRepository.save(guestUser);
+
+        return upgradedUser;
     }
 
     @Transactional(readOnly = true)

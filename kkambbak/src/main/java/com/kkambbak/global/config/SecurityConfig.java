@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -31,6 +32,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     private final OAuth2EventHandler oAuth2SuccessHandler;
+    private final OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver;
 
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
             "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**",
@@ -51,6 +53,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2Login -> oauth2Login
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(oAuth2AuthorizationRequestResolver)
+                        )
                         .successHandler(oAuth2SuccessHandler)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService())
