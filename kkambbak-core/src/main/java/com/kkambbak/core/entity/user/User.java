@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -59,9 +60,6 @@ public class User extends BaseEntity {
     @Builder.Default
     @Column(name = "is_guest")
     private Boolean isGuest = false;
-
-    @Column(name = "guest_id", length = 50)
-    private String guestId;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
