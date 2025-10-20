@@ -1,6 +1,6 @@
 package com.kkambbak.domain.user.enums;
 
-import com.kkambbak.core.code.ResponseCode;
+import com.kkambbak.global.code.ResponseCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
