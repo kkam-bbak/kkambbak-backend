@@ -21,7 +21,7 @@ public class LoginTokenDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GuestLoginRequest {
-        private String guestId;  // 선택사항 (있으면 기존 계정, 없으면 새로 생성)
+        private String guestId;
     }
 
     @Getter

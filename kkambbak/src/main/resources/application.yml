@@ -23,6 +23,18 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+
   security:
     oauth2:
       client:
@@ -42,5 +54,8 @@ jwt:
 app:
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/oauth2/redirect}
+  email:
+    redirect-uri: ${EMAIL_REDIRECT_URI:http://localhost:3000/verify-email}
+    otp-expiry-minutes: ${EMAIL_OTP_EXPIRY_MINUTES:5}
   auth:
     key: ${AUTH_KEY:test-auth-key-1234}

@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP, status = 'DELETED' WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 public class User extends BaseEntity {
@@ -30,10 +30,10 @@ public class User extends BaseEntity {
     @Column(length = 255)
     private String email;
 
-    @Column(name = "first_name", nullable = false, length = 100)
+    @Column(name = "first_name", length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 100)
+    @Column(name = "last_name", length = 100)
     private String lastName;
 
     @Enumerated(EnumType.STRING)
@@ -54,10 +54,6 @@ public class User extends BaseEntity {
     private String profileCard;
 
     @Builder.Default
-    @Column(name = "is_email_verified")
-    private Boolean isEmailVerified = false;
-
-    @Builder.Default
     @Column(name = "is_guest")
     private Boolean isGuest = false;
 
@@ -72,7 +68,7 @@ public class User extends BaseEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserStatus status = UserStatus.ACTIVE;
+    private UserStatus status = UserStatus.PENDING;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -96,6 +92,7 @@ public class User extends BaseEntity {
         this.lastName = lastName;
         this.profileImage = profileImage;
         this.isGuest = false;
+        this.status = UserStatus.PENDING;  // 업그레이드 후 이메일 인증 대기 상태
         return this;
     }
 }

@@ -1,7 +1,7 @@
 package com.kkambbak.global.config;
 
 import com.kkambbak.domain.auth.eventHandler.OAuth2EventHandler;
-import com.kkambbak.domain.auth.service.OAuth2UserService;
+import com.kkambbak.domain.auth.service.AuthService;
 import com.kkambbak.global.jwt.JwtAuthenticationFilter;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.service.TokenBlacklistService;
@@ -39,7 +39,8 @@ public class SecurityConfig {
             "/static/**", "/webjars/**",
             "/login/oauth2/**", "/oauth2/**",
             "/actuator/**", "/health", "/error", "/favicon.ico",
-            "/api/v1/users/test-login", "/api/v1/users/guest-login", "/api/v1/users/refresh"
+            "/api/v1/users/test-login", "/api/v1/users/guest-login", "/api/v1/users/refresh",
+            "/api/v1/auth/verify-email", "/api/v1/auth/resend-otp", "/api/v1/auth/current-email"
     );
 
     @Bean
@@ -75,8 +76,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2UserService customOAuth2UserService() {
-        return new OAuth2UserService();
+    public AuthService customOAuth2UserService() {
+        return new AuthService();
     }
 
     @Bean

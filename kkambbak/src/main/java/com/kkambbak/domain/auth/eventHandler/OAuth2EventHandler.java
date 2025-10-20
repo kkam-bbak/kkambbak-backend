@@ -1,9 +1,17 @@
 package com.kkambbak.domain.auth.eventHandler;
 
+import com.kkambbak.core.entity.user.EmailVerification;
 import com.kkambbak.core.entity.user.User;
+import com.kkambbak.core.entity.user.enums.OtpStatus;
+import com.kkambbak.core.entity.user.enums.UserStatus;
+import com.kkambbak.core.repository.user.EmailVerificationRepository;
 import com.kkambbak.domain.auth.eventHandler.dto.GoogleOAuth2UserInfo;
+import com.kkambbak.domain.auth.exception.OAuth2AuthenticationException;
+import com.kkambbak.domain.auth.exception.UnsupportedOAuth2ProviderException;
+import com.kkambbak.domain.auth.service.EmailService;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.JwtUtil;
+import com.kkambbak.global.jwt.dto.TokenDataDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -25,9 +34,14 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private final EmailService emailService;
+    private final EmailVerificationRepository emailVerificationRepository;
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
+
+    @Value("${app.email.redirect-uri:http://localhost:3000/verify-email}")
+    private String emailVerificationRedirectUri;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -41,18 +55,29 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
 
         try {
             User user = processOAuth2User(registrationId, oAuth2User, guestProviderId);
+            String userEmail = user.getEmail();
 
-            String accessToken = jwtUtil.generateAccessToken(user.getId());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+            if (UserStatus.ACTIVE.equals(user.getStatus())) {
+                TokenDataDto tokenData = jwtUtil.createTokenData(user.getId());
 
-            String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-                    .queryParam("accessToken", accessToken)
-                    .queryParam("refreshToken", refreshToken)
-                    .build().toUriString();
+                String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
+                        .queryParam("accessToken", tokenData.getAccessToken())
+                        .queryParam("refreshToken", tokenData.getRefreshToken())
+                        .build().toUriString();
+                getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            } else {
+                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail);
 
-            getRedirectStrategy().sendRedirect(request, response, targetUrl);
-        } finally {
-            request.getSession().removeAttribute("guestProviderId");
+                String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
+                        .queryParam("code", emailVerification.getVerificationCode())
+                        .build().toUriString();
+
+                getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            }
+
+        } catch (Exception e) {
+            log.error("Error in OAuth2 authentication success handler", e);
+            throw new OAuth2AuthenticationException("OAuth2 인증 처리 중 오류 발생", e);
         }
     }
 
@@ -84,7 +109,6 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         );
                     }
                 } catch (Exception e) {
-                    log.error("Failed to upgrade guest to Google - guestProviderId: {}, error: {}", guestProviderId, e.getMessage(), e);
                     return userService.createOrUpdateUser(
                             "google",
                             userInfo.getSocialId(),
@@ -105,7 +129,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                 );
             }
         } else {
-            throw new IllegalArgumentException("Unsupported OAuth2 provider: " + registrationId);
+            log.error("Unsupported OAuth2 provider: {}", registrationId);
+            throw new UnsupportedOAuth2ProviderException(registrationId);
         }
     }
 }

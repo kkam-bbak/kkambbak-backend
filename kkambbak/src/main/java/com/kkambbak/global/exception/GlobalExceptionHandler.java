@@ -1,7 +1,6 @@
 package com.kkambbak.global.exception;
 
-import com.kkambbak.core.exception.CustomException;
-import com.kkambbak.core.code.ResponseCode;
+import com.kkambbak.global.code.ResponseCode;
 import com.kkambbak.global.code.CommonResponseCode;
 import com.kkambbak.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -95,22 +94,11 @@ public class GlobalExceptionHandler {
 
     private ApiResponse<Object> handleCustomException(CustomException e) {
         log.warn("Custom exception occurred: {}", e.getMessage());
-        ResponseCode coreResponseCode = e.getResponseCode();
-        com.kkambbak.global.code.ResponseCode globalResponseCode = new com.kkambbak.global.code.ResponseCode() {
-            @Override
-            public String getStatusCode() {
-                return coreResponseCode.getStatusCode();
-            }
-
-            @Override
-            public String getMessage() {
-                return coreResponseCode.getMessage();
-            }
-        };
-        if (!e.getMessage().equals(globalResponseCode.getMessage())) {
-            return ApiResponse.error(globalResponseCode, e.getMessage());
+        ResponseCode responseCode = e.getResponseCode();
+        if (!e.getMessage().equals(responseCode.getMessage())) {
+            return ApiResponse.error(responseCode, e.getMessage());
         } else {
-            return ApiResponse.error(globalResponseCode);
+            return ApiResponse.error(responseCode);
         }
     }
 
