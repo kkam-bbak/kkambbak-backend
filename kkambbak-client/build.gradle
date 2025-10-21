@@ -1,5 +1,6 @@
 dependencies {
 	implementation project(':kkambbak-core')
+	api 'org.springframework.boot:spring-boot-starter-mail'
 }
 
 bootJar {

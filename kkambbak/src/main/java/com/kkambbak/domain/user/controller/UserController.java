@@ -1,7 +1,6 @@
 package com.kkambbak.domain.user.controller;
 
 import com.kkambbak.domain.user.dto.LoginTokenDto;
-import com.kkambbak.domain.user.service.AuthService;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import com.kkambbak.global.response.ApiResponse;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final AuthService authService;
     private final UserService userService;
 
     /**
@@ -26,7 +24,14 @@ public class UserController {
      */
     @PostMapping("/test-login")
     public ApiResponse<LoginTokenDto.Response> testLogin(@Valid @RequestBody LoginTokenDto.TestLoginRequest request) {
-        return ApiResponse.ok(authService.testLoginByEmail(request.getEmail(), request.getKey()));
+        return ApiResponse.ok(userService.testLoginByEmail(request.getEmail(), request.getKey()));
+    }
+
+    @PostMapping("/guest-login")
+    public ApiResponse<LoginTokenDto.GuestLoginResponse> guestLogin(
+            @RequestBody(required = false) LoginTokenDto.GuestLoginRequest request) {
+        String guestId = request != null ? request.getGuestId() : null;
+        return ApiResponse.ok(userService.guestLogin(guestId));
     }
 
     /**
@@ -34,7 +39,7 @@ public class UserController {
      */
     @PostMapping("/refresh")
     public ApiResponse<TokenDataDto> refreshToken(@RequestHeader("RefreshToken") String refreshToken) {
-        return ApiResponse.ok(authService.refreshToken(refreshToken));
+        return ApiResponse.ok(userService.refreshToken(refreshToken));
     }
 
     @PostMapping("/logout")

@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum UserStatus {
-    ACTIVE("활성화"),
+public enum OtpStatus {
     PENDING("대기중"),
-    DELETED("탈퇴");
+    VERIFIED("검증완료"),
+    EXPIRED("만료");
 
     private final String description;
 }

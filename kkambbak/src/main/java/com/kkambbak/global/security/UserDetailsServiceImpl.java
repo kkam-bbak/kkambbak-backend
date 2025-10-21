@@ -1,7 +1,7 @@
 package com.kkambbak.global.security;
 
 import com.kkambbak.core.entity.user.User;
-import com.kkambbak.core.repository.UserRepository;
+import com.kkambbak.core.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

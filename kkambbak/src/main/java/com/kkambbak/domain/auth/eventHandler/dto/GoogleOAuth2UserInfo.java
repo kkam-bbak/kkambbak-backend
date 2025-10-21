@@ -21,13 +21,13 @@ public class GoogleOAuth2UserInfo {
     }
 
     public String getFirstName() {
-        Object givenName = attributes.get("given_name");
-        return givenName != null ? givenName.toString() : null;
+        Object familyName = attributes.get("family_name");
+        return familyName != null ? familyName.toString() : null;
     }
 
     public String getLastName() {
-        Object familyName = attributes.get("family_name");
-        return familyName != null ? familyName.toString() : null;
+        Object givenName = attributes.get("given_name");
+        return givenName != null ? givenName.toString() : null;
     }
 
     public String getProfileImage() {

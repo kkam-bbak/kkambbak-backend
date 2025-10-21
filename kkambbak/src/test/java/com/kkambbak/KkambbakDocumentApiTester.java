@@ -2,7 +2,6 @@ package com.kkambbak;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kkambbak.domain.user.service.UserService;
-import com.kkambbak.domain.user.service.AuthService;
 import com.kkambbak.global.jwt.JwtAuthenticationFilter;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.service.TokenBlacklistService;
@@ -49,9 +48,6 @@ public class KkambbakDocumentApiTester {
 
     @MockitoBean
     protected UserService userService;
-
-    @MockitoBean
-    protected AuthService authService;
 
     @MockitoBean
     protected UserDetailsServiceImpl userDetailsService;

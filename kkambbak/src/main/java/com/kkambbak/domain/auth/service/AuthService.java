@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class OAuth2UserService extends DefaultOAuth2UserService {
+public class AuthService extends DefaultOAuth2UserService {
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
