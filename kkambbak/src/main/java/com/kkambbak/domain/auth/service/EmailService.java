@@ -98,7 +98,10 @@ public class EmailService {
                 throw new OtpCodeExpiredException();
             }
 
-            verification.verifyOtp(otpCode);
+            boolean isVerified = verification.verifyOtp(otpCode);
+            if (!isVerified) {
+                throw new OtpVerificationFailedException();
+            }
             emailVerificationRepository.save(verification);
 
             log.info("OTP verified successfully for userId: {}", user.getId());
