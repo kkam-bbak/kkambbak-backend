@@ -36,7 +36,7 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                         .refreshTokenExpiredAt(System.currentTimeMillis() + 86400000)
                         .build())
                 .build();
-        given(authService.testLoginByEmail(anyString(), anyString())).willReturn(mockResponse);
+        given(userService.testLoginByEmail(anyString(), anyString())).willReturn(mockResponse);
 
         // when & then
         this.mockMvc.perform(post("/api/v1/users/test-login")
@@ -85,7 +85,7 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                 .accessTokenExpiredAt(System.currentTimeMillis() + 3600000)
                 .refreshTokenExpiredAt(System.currentTimeMillis() + 86400000)
                 .build();
-        given(authService.refreshToken(anyString())).willReturn(mockTokenData);
+        given(userService.refreshToken(anyString())).willReturn(mockTokenData);
 
         // when & then
         this.mockMvc.perform(post("/api/v1/users/refresh")
@@ -110,6 +110,58 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("body.refreshToken").type(JsonFieldType.STRING).description("새로운 리프레시 토큰"),
                                                 fieldWithPath("body.accessTokenExpiredAt").type(JsonFieldType.NUMBER).description("액세스 토큰 만료 시간 (timestamp)"),
                                                 fieldWithPath("body.refreshTokenExpiredAt").type(JsonFieldType.NUMBER).description("리프레시 토큰 만료 시간 (timestamp)")
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
+    void guestLoginTest() throws Exception {
+        // given
+        LoginTokenDto.GuestLoginResponse mockGuestResponse = LoginTokenDto.GuestLoginResponse.builder()
+                .userId(2L)
+                .providerId("guest_550e8400-e29b-41d4-a716-446655440000")
+                .isGuest(true)
+                .tokenData(TokenDataDto.builder()
+                        .grantType("Bearer")
+                        .accessToken("mockGuestAccessToken")
+                        .refreshToken("mockGuestRefreshToken")
+                        .accessTokenExpiredAt(System.currentTimeMillis() + 3600000)
+                        .refreshTokenExpiredAt(System.currentTimeMillis() + 86400000)
+                        .build())
+                .build();
+        given(userService.guestLogin(any())).willReturn(mockGuestResponse);
+
+        // when & then
+        this.mockMvc.perform(post("/api/v1/users/guest-login")
+                        .contentType("application/json")
+                        .content(toJson(Map.of("guestId", "guest_550e8400-e29b-41d4-a716-446655440000"))))
+                .andExpect(status().isOk())
+                .andDo(document("user-guest-login",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("Users")
+                                        .summary("게스트 로그인")
+                                        .description("게스트 사용자를 생성하거나 기존 게스트 계정으로 로그인하고 액세스 토큰과 리프레시 토큰을 발급받습니다. " +
+                                                "guestId를 보내면 기존 게스트 계정으로 로그인하고, 보내지 않으면 새로운 게스트 계정을 생성합니다.")
+                                        .requestFields(
+                                                fieldWithPath("guestId").type(JsonFieldType.STRING).description("게스트 ID (선택사항, 있으면 기존 계정 조회, 없으면 새로 생성. 예: guest_550e8400-e29b-41d4-a716-446655440000)").optional()
+                                        )
+                                        .responseFields(
+                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.OBJECT).description("응답 데이터"),
+                                                fieldWithPath("body.userId").type(JsonFieldType.NUMBER).description("게스트 사용자 ID"),
+                                                fieldWithPath("body.providerId").type(JsonFieldType.STRING).description("게스트 Provider ID (guest_로 시작)"),
+                                                fieldWithPath("body.isGuest").type(JsonFieldType.BOOLEAN).description("게스트 여부 (true)"),
+                                                fieldWithPath("body.tokenData").type(JsonFieldType.OBJECT).description("토큰 정보"),
+                                                fieldWithPath("body.tokenData.grantType").type(JsonFieldType.STRING).description("토큰 타입 (Bearer)"),
+                                                fieldWithPath("body.tokenData.accessToken").type(JsonFieldType.STRING).description("액세스 토큰"),
+                                                fieldWithPath("body.tokenData.refreshToken").type(JsonFieldType.STRING).description("리프레시 토큰"),
+                                                fieldWithPath("body.tokenData.accessTokenExpiredAt").type(JsonFieldType.NUMBER).description("액세스 토큰 만료 시간 (timestamp)"),
+                                                fieldWithPath("body.tokenData.refreshTokenExpiredAt").type(JsonFieldType.NUMBER).description("리프레시 토큰 만료 시간 (timestamp)")
                                         )
                                         .build()
                         )

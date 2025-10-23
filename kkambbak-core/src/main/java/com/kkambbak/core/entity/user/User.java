@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP, status = 'DELETED' WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 public class User extends BaseEntity {
@@ -29,10 +30,10 @@ public class User extends BaseEntity {
     @Column(length = 255)
     private String email;
 
-    @Column(name = "first_name", nullable = false, length = 100)
+    @Column(name = "first_name", length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 100)
+    @Column(name = "last_name", length = 100)
     private String lastName;
 
     @Enumerated(EnumType.STRING)
@@ -53,15 +54,8 @@ public class User extends BaseEntity {
     private String profileCard;
 
     @Builder.Default
-    @Column(name = "is_email_verified")
-    private Boolean isEmailVerified = false;
-
-    @Builder.Default
     @Column(name = "is_guest")
     private Boolean isGuest = false;
-
-    @Column(name = "guest_id", length = 50)
-    private String guestId;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -74,7 +68,7 @@ public class User extends BaseEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserStatus status = UserStatus.ACTIVE;
+    private UserStatus status = UserStatus.PENDING;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -84,6 +78,21 @@ public class User extends BaseEntity {
         this.firstName = firstName;
         this.lastName = lastName;
         this.profileImage = profileImage;
+        return this;
+    }
+
+    // 게스트 사용자를 Google 계정으로 업그레이드
+    public User upgradeToGoogleUser(AuthProvider provider, String providerId,
+                                    String email, String firstName, String lastName,
+                                    String profileImage) {
+        this.provider = provider;
+        this.providerId = providerId;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.profileImage = profileImage;
+        this.isGuest = false;
+        this.status = UserStatus.PENDING;  // 업그레이드 후 이메일 인증 대기 상태
         return this;
     }
 }

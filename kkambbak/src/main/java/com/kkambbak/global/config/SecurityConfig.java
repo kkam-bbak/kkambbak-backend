@@ -1,7 +1,7 @@
 package com.kkambbak.global.config;
 
 import com.kkambbak.domain.auth.eventHandler.OAuth2EventHandler;
-import com.kkambbak.domain.auth.service.OAuth2UserService;
+import com.kkambbak.domain.auth.service.AuthService;
 import com.kkambbak.global.jwt.JwtAuthenticationFilter;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.service.TokenBlacklistService;
@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -31,13 +32,15 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     private final OAuth2EventHandler oAuth2SuccessHandler;
+    private final OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver;
 
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
             "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**",
             "/static/**", "/webjars/**",
             "/login/oauth2/**", "/oauth2/**",
             "/actuator/**", "/health", "/error", "/favicon.ico",
-            "/api/v1/users/test-login", "/api/v1/users/refresh"
+            "/api/v1/users/test-login", "/api/v1/users/guest-login", "/api/v1/users/refresh",
+            "/api/v1/auth/verify-email", "/api/v1/auth/resend-otp", "/api/v1/auth/current-email"
     );
 
     @Bean
@@ -51,6 +54,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2Login -> oauth2Login
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(oAuth2AuthorizationRequestResolver)
+                        )
                         .successHandler(oAuth2SuccessHandler)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService())
@@ -70,8 +76,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2UserService customOAuth2UserService() {
-        return new OAuth2UserService();
+    public AuthService customOAuth2UserService() {
+        return new AuthService();
     }
 
     @Bean
