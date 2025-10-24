@@ -84,18 +84,21 @@ jobs:
             # Docker 네트워크 생성 (없으면)
             /usr/bin/docker network create kkambbak-network || true
 
-            # Redis 컨테이너 시작 (없으면 생성)
-            if [ ! "$(/usr/bin/docker ps -q -f name=kkambbak-redis)" ]; then
-              if [ "$(/usr/bin/docker ps -aq -f name=kkambbak-redis)" ]; then
-                /usr/bin/docker rm kkambbak-redis
-              fi
-              /usr/bin/docker run -d \
-                --name kkambbak-redis \
-                --restart unless-stopped \
-                -p 6379:6379 \
-                --network kkambbak-network \
-                redis:7-alpine redis-server --requirepass "${{ secrets.REDIS_PASSWORD }}"
-            fi
+            # Redis 데이터 볼륨 생성 (없으면)
+            /usr/bin/docker volume create redis-data || true
+
+            # 기존 Redis 컨테이너 중지 및 제거
+            /usr/bin/docker stop kkambbak-redis || true
+            /usr/bin/docker rm kkambbak-redis || true
+
+            # Redis 컨테이너 실행 (데이터 보존)
+            /usr/bin/docker run -d \
+              --name kkambbak-redis \
+              --restart unless-stopped \
+              -p 6379:6379 \
+              --network kkambbak-network \
+              -v redis-data:/data \
+              redis:7-alpine redis-server --appendonly yes
 
             # 기존 애플리케이션 컨테이너 중지 및 제거
             /usr/bin/docker stop kkambbak || true
@@ -115,7 +118,6 @@ jobs:
               -e "JPA_DIALECT=${{ secrets.JPA_DIALECT }}" \
               -e REDIS_HOST=kkambbak-redis \
               -e REDIS_PORT=6379 \
-              -e "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" \
               -e "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
               -e "JWT_ACCESS_TOKEN_EXPIRATION=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }}" \
               -e "JWT_REFRESH_TOKEN_EXPIRATION=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }}" \
