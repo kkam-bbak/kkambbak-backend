@@ -116,6 +116,11 @@ jobs:
               -e "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" \
               -e "EMAIL_REDIRECT_URI=${{ secrets.EMAIL_REDIRECT_URI }}" \
               -e "EMAIL_OTP_EXPIRY_MINUTES=${{ secrets.EMAIL_OTP_EXPIRY_MINUTES }}" \
+              -e "R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}" \
+              -e "R2_ACCESS_KEY=${{ secrets.R2_ACCESS_KEY }}" \
+              -e "R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}" \
+              -e "R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}" \
+              -e "R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}" \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
 
             # 사용하지 않는 이미지 정리
