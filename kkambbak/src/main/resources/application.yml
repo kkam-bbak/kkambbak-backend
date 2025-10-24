@@ -59,3 +59,11 @@ app:
     otp-expiry-minutes: ${EMAIL_OTP_EXPIRY_MINUTES:5}
   auth:
     key: ${AUTH_KEY:test-auth-key-1234}
+
+cloudflare:
+  r2:
+    account-id: ${R2_ACCOUNT_ID:test-account-id}
+    access-key: ${R2_ACCESS_KEY:test-access-key}
+    secret-key: ${R2_SECRET_KEY:test-secret-key}
+    bucket-name: ${R2_BUCKET_NAME:kkambbak-images}
+    public-domain: ${R2_PUBLIC_DOMAIN:https://pub-test.r2.dev}
