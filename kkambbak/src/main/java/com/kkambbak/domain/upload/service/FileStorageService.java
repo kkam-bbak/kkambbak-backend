@@ -43,6 +43,13 @@ public class FileStorageService {
             throw new InvalidFileNameException();
         }
 
+        // HEIC/HEIF 파일 검사 및 거부
+        String filenameLower = originalFilename.toLowerCase();
+        if (filenameLower.endsWith(".heic") || filenameLower.endsWith(".heif")) {
+            log.warn("Unsupported image format rejected: {}", originalFilename);
+            throw new UnsupportedImageFormatException("HEIC/HEIF 형식은 지원하지 않습니다. JPEG 또는 PNG로 변환 후 업로드해주세요.");
+        }
+
         try (InputStream webpInputStream = ImageConverter.convertToWebP(file)) {
             byte[] fileBytes = webpInputStream.readAllBytes();
 

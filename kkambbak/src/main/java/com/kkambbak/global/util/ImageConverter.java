@@ -6,7 +6,10 @@ import com.sksamuel.scrimage.webp.WebpWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 
@@ -40,12 +43,31 @@ public class ImageConverter {
 
     private static InputStream convertToWebP(InputStream inputStream, int quality, String filename) {
         try {
-            ImmutableImage image = ImmutableImage.loader().fromStream(inputStream);
-            return processImageConversion(image, quality);
+            try {
+                ImmutableImage image = ImmutableImage.loader().fromStream(inputStream);
+                return processImageConversion(image, quality);
+            } catch (Exception e) {
+                inputStream = convertViaPng(inputStream, filename);
+                ImmutableImage image = ImmutableImage.loader().fromStream(inputStream);
+                return processImageConversion(image, quality);
+            }
         } catch (Exception e) {
             log.error("Failed to convert image to WebP: {}", filename, e);
             throw new ImageConversionFailedException(filename);
         }
+    }
+
+    private static InputStream convertViaPng(InputStream inputStream, String filename) throws Exception {
+        BufferedImage bufferedImage = ImageIO.read(inputStream);
+
+        if (bufferedImage == null) {
+            throw new IllegalArgumentException("Failed to read image: " + filename);
+        }
+
+        ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
+        ImageIO.write(bufferedImage, "png", pngOutputStream);
+
+        return new ByteArrayInputStream(pngOutputStream.toByteArray());
     }
 
     // 이미지 처리 및 변환
@@ -65,7 +87,6 @@ public class ImageConverter {
             int newHeight = (int) (image.height * scale);
 
             image = image.scaleTo(newWidth, newHeight);
-            log.info("Image resized from {}x{} to {}x{}", originalWidth, originalHeight, newWidth, newHeight);
         }
         return image;
     }
