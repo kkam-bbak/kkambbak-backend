@@ -33,22 +33,24 @@ public class UserService {
     @Value("${app.auth.key}")
     private String authKey;
 
+    @Value("${app.user.default-profile-image}")
+    private String defaultProfileImage;
+
     @Transactional
     public User createOrUpdateUser(String provider, String providerId, String email,
-                                   String firstName, String lastName, String profileImage) {
+                                   String name, String profileImage) {
         AuthProvider authProvider = AuthProvider.valueOf(provider.toUpperCase());
 
         return userRepository.findByProviderAndProviderId(authProvider, providerId)
                 .map(existingUser -> {
                     return userRepository.save(
-                            existingUser.updateFromOAuth2(email, firstName, lastName, profileImage)
+                            existingUser.updateFromOAuth2(email, name, profileImage)
                     );
                 })
                 .orElseGet(() -> {
                     User newUser = User.builder()
                             .email(email)
-                            .firstName(firstName)
-                            .lastName(lastName)
+                            .name(name)
                             .profileImage(profileImage)
                             .provider(authProvider)
                             .providerId(providerId)
@@ -62,12 +64,12 @@ public class UserService {
     @Transactional
     public User createGuestUser() {
         String providerId = "guest_" + UUID.randomUUID();
-        String lastNameMasked = providerId.substring(Math.max(0, providerId.length() - 8));
+        String guestName = "Guest_" + providerId.substring(Math.max(0, providerId.length() - 8));
 
         User guestUser = User.builder()
-                .firstName("Guest")
-                .lastName(lastNameMasked)
+                .name(guestName)
                 .email(null)
+                .profileImage(defaultProfileImage)
                 .provider(AuthProvider.GUEST)
                 .providerId(providerId)
                 .isGuest(true)
@@ -106,8 +108,7 @@ public class UserService {
 
     @Transactional
     public User upgradeGuestToGoogle(String guestProviderId, String googleProviderId,
-                                     String email, String firstName, String lastName,
-                                     String profileImage) {
+                                     String email, String name, String profileImage) {
         User guestUser = userRepository.findByProviderAndProviderIdWithLock(AuthProvider.GUEST, guestProviderId)
                 .orElse(null);
 
@@ -118,21 +119,18 @@ public class UserService {
 
         if (!AuthProvider.GUEST.equals(guestUser.getProvider())) {
             log.warn("Guest user already upgraded - guestProviderId: {}, current provider: {}", guestProviderId, guestUser.getProvider());
-            return userRepository.save(guestUser.updateFromOAuth2(email, firstName, lastName, profileImage));
+            return userRepository.save(guestUser.updateFromOAuth2(email, name, profileImage));
         }
 
         guestUser.upgradeToGoogleUser(
                 AuthProvider.GOOGLE,
                 googleProviderId,
                 email,
-                firstName,
-                lastName,
+                name,
                 profileImage
         );
 
-        User upgradedUser = userRepository.save(guestUser);
-
-        return upgradedUser;
+        return userRepository.save(guestUser);
     }
 
     @Transactional(readOnly = true)

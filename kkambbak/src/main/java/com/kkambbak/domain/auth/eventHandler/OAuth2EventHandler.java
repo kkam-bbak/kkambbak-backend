@@ -43,6 +43,9 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
     @Value("${app.email.redirect-uri:http://localhost:3000/verify-email}")
     private String emailVerificationRedirectUri;
 
+    @Value("${app.user.default-profile-image}")
+    private String defaultProfileImage;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -85,15 +88,16 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
         if ("google".equalsIgnoreCase(registrationId)) {
             GoogleOAuth2UserInfo userInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
 
+            String profileImage = defaultProfileImage;
+
             if (guestProviderId != null && !guestProviderId.isEmpty()) {
                 try {
                     User upgradedUser = userService.upgradeGuestToGoogle(
                             guestProviderId,
                             userInfo.getSocialId(),
                             userInfo.getEmail(),
-                            userInfo.getFirstName(),
-                            userInfo.getLastName(),
-                            userInfo.getProfileImage()
+                            userInfo.getName(),
+                            profileImage
                     );
 
                     if (upgradedUser != null) {
@@ -103,9 +107,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                                 "google",
                                 userInfo.getSocialId(),
                                 userInfo.getEmail(),
-                                userInfo.getFirstName(),
-                                userInfo.getLastName(),
-                                userInfo.getProfileImage()
+                                userInfo.getName(),
+                                profileImage
                         );
                     }
                 } catch (Exception e) {
@@ -113,9 +116,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                             "google",
                             userInfo.getSocialId(),
                             userInfo.getEmail(),
-                            userInfo.getFirstName(),
-                            userInfo.getLastName(),
-                            userInfo.getProfileImage()
+                            userInfo.getName(),
+                            profileImage
                     );
                 }
             } else {
@@ -123,9 +125,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         "google",
                         userInfo.getSocialId(),
                         userInfo.getEmail(),
-                        userInfo.getFirstName(),
-                        userInfo.getLastName(),
-                        userInfo.getProfileImage()
+                        userInfo.getName(),
+                        profileImage
                 );
             }
         } else {
