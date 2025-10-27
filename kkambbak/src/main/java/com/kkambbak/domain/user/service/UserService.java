@@ -2,13 +2,17 @@ package com.kkambbak.domain.user.service;
 
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
+import com.kkambbak.core.entity.user.enums.Gender;
+import com.kkambbak.core.entity.user.enums.UserStatus;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
+import com.kkambbak.domain.user.dto.UpdateProfileDto;
 import com.kkambbak.domain.user.exception.InvalidAuthKeyException;
 import com.kkambbak.domain.user.exception.LogoutFailedException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
 import com.kkambbak.domain.user.exception.GuestNotFoundException;
 import com.kkambbak.domain.user.exception.InvalidGuestIdException;
+import com.kkambbak.domain.user.exception.ProfileValidationException;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import com.kkambbak.global.security.UserDetailsImpl;
@@ -73,6 +77,7 @@ public class UserService {
                 .provider(AuthProvider.GUEST)
                 .providerId(providerId)
                 .isGuest(true)
+                .status(UserStatus.ACTIVE)
                 .build();
 
         return userRepository.save(guestUser);
@@ -100,7 +105,6 @@ public class UserService {
 
         return LoginTokenDto.GuestLoginResponse.builder()
                 .tokenData(tokenData)
-                .userId(guestUser.getId())
                 .providerId(guestUser.getProviderId())
                 .isGuest(true)
                 .build();
@@ -152,6 +156,56 @@ public class UserService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .build();
+    }
+
+    public void register(Long userId, UpdateProfileDto request, Gender gender) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        user.updateProfile(
+                request.getName(),
+                gender,
+                request.getCountryOfOrigin(),
+                request.getPersonalityOrImage(),
+                request.getPreferredNameMeaning()
+        );
+
+        userRepository.save(user);
+    }
+
+    public Gender validateProfileRequest(UpdateProfileDto request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new ProfileValidationException("이름은 필수입니다");
+        }
+        if (request.getName().length() > 200) {
+            throw new ProfileValidationException("이름은 200자 이하여야 합니다");
+        }
+
+        if (request.getCountryOfOrigin() == null || request.getCountryOfOrigin().isBlank()) {
+            throw new ProfileValidationException("국가는 필수입니다");
+        }
+        if (request.getCountryOfOrigin().length() > 100) {
+            throw new ProfileValidationException("국가는 100자 이하여야 합니다");
+        }
+
+        if (request.getPersonalityOrImage() == null || request.getPersonalityOrImage().isBlank()) {
+            throw new ProfileValidationException("Personality, Image는 필수입니다");
+        }
+
+        if (request.getPreferredNameMeaning() == null || request.getPreferredNameMeaning().isBlank()) {
+            throw new ProfileValidationException("선호하는 이름 의미는 필수입니다");
+        }
+
+        if (request.getGender() == null || request.getGender().isBlank()) {
+            throw new ProfileValidationException("성별은 필수입니다");
+        }
+
+        try {
+            return Gender.valueOf(request.getGender().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid gender value: {}", request.getGender());
+            throw new ProfileValidationException("유효하지 않은 성별입니다. (MALE, FEMALE만 가능)");
+        }
     }
 
     @Transactional

@@ -2,7 +2,9 @@ package com.kkambbak.domain.user.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.kkambbak.KkambbakDocumentApiTester;
+import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
+import com.kkambbak.domain.user.dto.UpdateProfileDto;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.restdocs.payload.JsonFieldType;
@@ -12,6 +14,7 @@ import java.util.Map;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
@@ -120,7 +123,6 @@ class UserControllerTest extends KkambbakDocumentApiTester {
     void guestLoginTest() throws Exception {
         // given
         LoginTokenDto.GuestLoginResponse mockGuestResponse = LoginTokenDto.GuestLoginResponse.builder()
-                .userId(2L)
                 .providerId("guest_550e8400-e29b-41d4-a716-446655440000")
                 .isGuest(true)
                 .tokenData(TokenDataDto.builder()
@@ -153,7 +155,6 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
                                                 fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
                                                 fieldWithPath("body").type(JsonFieldType.OBJECT).description("응답 데이터"),
-                                                fieldWithPath("body.userId").type(JsonFieldType.NUMBER).description("게스트 사용자 ID"),
                                                 fieldWithPath("body.providerId").type(JsonFieldType.STRING).description("게스트 Provider ID (guest_로 시작)"),
                                                 fieldWithPath("body.isGuest").type(JsonFieldType.BOOLEAN).description("게스트 여부 (true)"),
                                                 fieldWithPath("body.tokenData").type(JsonFieldType.OBJECT).description("토큰 정보"),
@@ -191,6 +192,50 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
                                                 fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
                                                 fieldWithPath("body").type(JsonFieldType.NULL).description("응답 본문 (null)").optional()
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
+    void registerTest() throws Exception {
+        // given
+        given(userService.validateProfileRequest(any(UpdateProfileDto.class))).willReturn(Gender.MALE);
+        doNothing().when(userService).register(anyLong(), any(UpdateProfileDto.class), any(Gender.class));
+
+        // when & then
+        this.mockMvc.perform(put("/api/v1/users/register")
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json")
+                        .content(toJson(Map.of(
+                                "name", "KimJunHyeong",
+                                "gender", "MALE",
+                                "countryOfOrigin", "South Korea",
+                                "personalityOrImage", "I'm full of bright energy with a playful, charming vibe.",
+                                "preferredNameMeaning", "My name means to shine brightly like light and bring warmth to others."
+                        ))))
+                .andExpect(status().isOk())
+                .andDo(document("user-update-profile",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("Users")
+                                        .summary("회원가입 ")
+                                        .description("소셜 로그인 또는 게스트 로그인 후 회원가입 진행합니다. 기존 데이터가 있으면 새로운 값으로 덮어씁니다.")
+                                        .requestHeaders(
+                                                headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .requestFields(
+                                                fieldWithPath("name").type(JsonFieldType.STRING).description("영문 이름 (성+이름)"),
+                                                fieldWithPath("gender").type(JsonFieldType.STRING).description("성별 (MALE, FEMALE, OTHER)"),
+                                                fieldWithPath("countryOfOrigin").type(JsonFieldType.STRING).description("국가명 (예: South Korea, USA)"),
+                                                fieldWithPath("personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명 (AI 전달용 문장)"),
+                                                fieldWithPath("preferredNameMeaning").type(JsonFieldType.STRING).description("선호하는 이름 의미 (AI 전달용 문장)")
+                                        )
+                                        .responseFields(
+                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional()
                                         )
                                         .build()
                         )

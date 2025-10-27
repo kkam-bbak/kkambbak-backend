@@ -94,4 +94,13 @@ public class User extends BaseEntity {
         this.isGuest = false;
         this.status = UserStatus.PENDING;
     }
+
+    public void updateProfile(String name, Gender gender, String countryOfOrigin,
+                              String personalityOrImage, String preferredNameMeaning) {
+        this.name = name;
+        this.gender = gender;
+        this.countryOfOrigin = countryOfOrigin;
+        this.personalityOrImage = personalityOrImage;
+        this.preferredNameMeaning = preferredNameMeaning;
+    }
 }

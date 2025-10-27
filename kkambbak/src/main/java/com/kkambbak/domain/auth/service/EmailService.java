@@ -46,12 +46,23 @@ public class EmailService {
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public EmailVerification sendOtpEmail(String email) {
+        return sendOtpEmail(email, true);
+    }
+
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public EmailVerification sendOtpEmail(String email, boolean isNewFlow) {
         return retryWithBackoff(() -> {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(UserNotFoundException::new);
 
             java.util.List<EmailVerification> unverifiedOtps =
                     emailVerificationRepository.findAllUnverifiedByUserId(user.getId());
+
+            String existingVerificationCode = null;
+            if (!unverifiedOtps.isEmpty() && !isNewFlow) {
+                existingVerificationCode = unverifiedOtps.get(0).getVerificationCode();
+            }
+
             for (EmailVerification otp : unverifiedOtps) {
                 otp.expireOtp();
                 emailVerificationRepository.save(otp);
@@ -61,7 +72,8 @@ public class EmailService {
             }
 
             String otpCode = generateOtpCode();
-            String verificationCode = UUID.randomUUID().toString();
+            String verificationCode = existingVerificationCode != null ?
+                    existingVerificationCode : UUID.randomUUID().toString();
             LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(otpExpiryMinutes);
 
             EmailVerification newVerification = EmailVerification.builder()
