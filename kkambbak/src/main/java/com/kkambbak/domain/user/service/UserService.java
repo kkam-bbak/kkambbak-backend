@@ -7,6 +7,7 @@ import com.kkambbak.core.entity.user.enums.UserStatus;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
+import com.kkambbak.domain.user.dto.GetProfileDto;
 import com.kkambbak.domain.user.exception.InvalidAuthKeyException;
 import com.kkambbak.domain.user.exception.LogoutFailedException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
@@ -206,6 +207,14 @@ public class UserService {
             log.warn("Invalid gender value: {}", request.getGender());
             throw new ProfileValidationException("유효하지 않은 성별입니다. (MALE, FEMALE만 가능)");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public GetProfileDto getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        return GetProfileDto.from(user);
     }
 
     @Transactional

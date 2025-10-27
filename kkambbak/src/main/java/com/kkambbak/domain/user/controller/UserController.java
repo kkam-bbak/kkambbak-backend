@@ -2,6 +2,7 @@ package com.kkambbak.domain.user.controller;
 
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
+import com.kkambbak.domain.user.dto.GetProfileDto;
 import com.kkambbak.domain.user.facade.UserFacade;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
@@ -57,5 +58,11 @@ public class UserController {
             @RequestBody UpdateProfileDto request) {
         userFacade.register(userDetails.getUserId(), request);
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/profile")
+    public ApiResponse<GetProfileDto> getProfile(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ApiResponse.ok(userService.getProfile(userDetails.getUserId()));
     }
 }

@@ -5,6 +5,7 @@ import com.kkambbak.KkambbakDocumentApiTester;
 import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
+import com.kkambbak.domain.user.dto.GetProfileDto;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.restdocs.payload.JsonFieldType;
@@ -236,6 +237,51 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
                                                 fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional()
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
+    void getProfileTest() throws Exception {
+        // given
+        GetProfileDto mockProfile = GetProfileDto.builder()
+                .name("Kim Jun Hyeong")
+                .koreanName("김준형")
+                .nameMeaning("준하는 의미는 밝고 긍정적인 에너지를 의미합니다")
+                .gender(Gender.MALE)
+                .countryOfOrigin("South Korea")
+                .personalityOrImage("I'm full of bright energy with a playful, charming vibe.")
+                .profileImage("https://example.com/profile.jpg")
+                .build();
+        given(userService.getProfile(anyLong())).willReturn(mockProfile);
+
+        // when & then
+        this.mockMvc.perform(get("/api/v1/users/profile")
+                        .header("Authorization", "Bearer access_token_example"))
+                .andExpect(status().isOk())
+                .andDo(document("user-get-profile",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("Users")
+                                        .summary("프로필 조회")
+                                        .description("사용자의 프로필 정보를 조회합니다")
+                                        .requestHeaders(
+                                                headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .responseFields(
+                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.OBJECT).description("응답 데이터"),
+                                                fieldWithPath("body.name").type(JsonFieldType.STRING).description("영문 이름"),
+                                                fieldWithPath("body.koreanName").type(JsonFieldType.STRING).description("한국어 이름"),
+                                                fieldWithPath("body.nameMeaning").type(JsonFieldType.STRING).description("한국어 이름 뜻"),
+                                                fieldWithPath("body.gender").type(JsonFieldType.STRING).description("성별 (MALE, FEMALE)"),
+                                                fieldWithPath("body.countryOfOrigin").type(JsonFieldType.STRING).description("국가명"),
+                                                fieldWithPath("body.personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명"),
+                                                fieldWithPath("body.profileImage").type(JsonFieldType.STRING).description("프로필 사진 URL")
                                         )
                                         .build()
                         )
