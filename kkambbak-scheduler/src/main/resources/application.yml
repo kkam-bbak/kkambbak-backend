@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: kkambbak-scheduler
+
+  profiles:
+    include:
+      - core
+
+discord:
+  webhook:
+    url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}

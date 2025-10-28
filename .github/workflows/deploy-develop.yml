@@ -36,11 +36,8 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v5
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: kkambbak/build/libs
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to DockerHub
         uses: docker/login-action@v3
@@ -48,11 +45,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop .
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: api
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Push Docker image
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+      - name: Build and push Scheduler image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: scheduler
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to Naver Cloud
         uses: appleboy/ssh-action@v1.0.3
@@ -67,6 +80,7 @@ jobs:
 
             # 최신 이미지 pull
             /usr/bin/docker pull ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+            /usr/bin/docker pull ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
 
             # Docker 네트워크 생성 (없으면)
             /usr/bin/docker network create kkambbak-network || true
@@ -125,6 +139,21 @@ jobs:
               -e "R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}" \
               -e "DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}" \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+
+            # 기존 스케줄러 컨테이너 중지 및 제거
+            /usr/bin/docker stop kkambbak-scheduler || true
+            /usr/bin/docker rm kkambbak-scheduler || true
+
+            # 스케줄러 컨테이너 실행
+            /usr/bin/docker run -d \
+              --name kkambbak-scheduler \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -e "DATABASE_URL=${{ secrets.DB_URL }}" \
+              -e "DATABASE_USERNAME=${{ secrets.DB_USERNAME }}" \
+              -e "DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+              -e "DISCORD_SCHEDULER_WEBHOOK_URL=${{ secrets.DISCORD_SCHEDULER_WEBHOOK_URL }}" \
+              ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
 
             # 사용하지 않는 이미지 정리
             /usr/bin/docker image prune -af

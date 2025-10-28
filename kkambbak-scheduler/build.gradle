@@ -1,0 +1,12 @@
+dependencies {
+	implementation project(':kkambbak-core')
+	implementation project(':kkambbak-client')
+}
+
+bootJar {
+	enabled = true
+}
+
+jar {
+	enabled = false
+}

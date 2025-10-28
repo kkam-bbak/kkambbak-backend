@@ -19,6 +19,10 @@ services:
       retries: 3
 
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
     image: ${DOCKERHUB_USERNAME}/kkambbak:latest
     container_name: kkambbak
     restart: unless-stopped
@@ -44,6 +48,22 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - kkambbak-network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: scheduler
+    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:latest
+    container_name: kkambbak-scheduler
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DB_URL}
+      - DATABASE_USERNAME=${DB_USERNAME}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DISCORD_SCHEDULER_WEBHOOK_URL=${DISCORD_SCHEDULER_WEBHOOK_URL}
     networks:
       - kkambbak-network
 

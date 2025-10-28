@@ -2,3 +2,18 @@ spring:
   config:
     activate:
       on-profile: core
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/kkambbak}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+        format_sql: true
+        show_sql: false
