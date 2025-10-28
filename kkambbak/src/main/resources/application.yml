@@ -64,6 +64,8 @@ app:
     otp-expiry-minutes: ${EMAIL_OTP_EXPIRY_MINUTES:5}
   auth:
     key: ${AUTH_KEY:test-auth-key-1234}
+  user:
+    default-profile-image: ${DEFAULT_PROFILE_IMAGE:https://DEFAULT_PROFILE_IMAGE}
 
 cloudflare:
   r2:

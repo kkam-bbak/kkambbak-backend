@@ -20,14 +20,14 @@ public class GoogleOAuth2UserInfo {
         return email != null ? email.toString() : null;
     }
 
-    public String getFirstName() {
+    public String getName() {
         Object familyName = attributes.get("family_name");
-        return familyName != null ? familyName.toString() : null;
-    }
-
-    public String getLastName() {
         Object givenName = attributes.get("given_name");
-        return givenName != null ? givenName.toString() : null;
+
+        String family = familyName != null ? familyName.toString() : "";
+        String given = givenName != null ? givenName.toString() : "";
+
+        return (family + given);
     }
 
     public String getProfileImage() {

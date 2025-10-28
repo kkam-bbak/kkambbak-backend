@@ -123,6 +123,7 @@ jobs:
               -e "R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}" \
               -e "R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}" \
               -e "R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}" \
+              -e "DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}" \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
 
             # 사용하지 않는 이미지 정리

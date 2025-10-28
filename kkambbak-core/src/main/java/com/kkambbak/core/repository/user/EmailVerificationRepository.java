@@ -35,5 +35,6 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     /**
      * 검증 코드로 이메일 검증 조회
      */
-    Optional<EmailVerification> findByVerificationCode(String verificationCode);
+    @Query("SELECT ev FROM EmailVerification ev WHERE ev.verificationCode = :verificationCode AND ev.status = 'PENDING' ORDER BY ev.createdAt DESC LIMIT 1")
+    Optional<EmailVerification> findByVerificationCodeAndPending(@Param("verificationCode") String verificationCode);
 }

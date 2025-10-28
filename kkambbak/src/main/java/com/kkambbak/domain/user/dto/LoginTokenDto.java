@@ -40,8 +40,7 @@ public class LoginTokenDto {
     @AllArgsConstructor
     public static class GuestLoginResponse {
         private TokenDataDto tokenData;
-        private Long userId;
-        private String providerId; 
+        private String providerId;
         private Boolean isGuest;
     }
 }

@@ -10,7 +10,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.annotations.Check;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,16 +29,14 @@ public class User extends BaseEntity {
     @Column(length = 255)
     private String email;
 
-    @Column(name = "first_name", length = 100)
-    private String firstName;
-
-    @Column(name = "last_name", length = 100)
-    private String lastName;
+    @Column(name = "name", length = 200)
+    private String name;
 
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    private LocalDate birthdate;
+    @Column(name = "country_of_origin", length = 100)
+    private String countryOfOrigin;
 
     @Column(name = "profile_image", columnDefinition = "TEXT")
     private String profileImage;
@@ -49,6 +46,12 @@ public class User extends BaseEntity {
 
     @Column(name = "name_meaning", columnDefinition = "TEXT")
     private String nameMeaning;
+
+    @Column(name = "personality_or_image", columnDefinition = "TEXT")
+    private String personalityOrImage;
+
+    @Column(name = "preferred_name_meaning", columnDefinition = "TEXT")
+    private String preferredNameMeaning;
 
     @Column(name = "profile_card", columnDefinition = "TEXT")
     private String profileCard;
@@ -73,26 +76,31 @@ public class User extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public User updateFromOAuth2(String email, String firstName, String lastName, String profileImage) {
+    public User updateFromOAuth2(String email, String name, String profileImage) {
         this.email = email;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.name = name;
         this.profileImage = profileImage;
         return this;
     }
 
     // 게스트 사용자를 Google 계정으로 업그레이드
-    public User upgradeToGoogleUser(AuthProvider provider, String providerId,
-                                    String email, String firstName, String lastName,
-                                    String profileImage) {
+    public void upgradeToGoogleUser(AuthProvider provider, String providerId,
+                                    String email, String name, String profileImage) {
         this.provider = provider;
         this.providerId = providerId;
         this.email = email;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.name = name;
         this.profileImage = profileImage;
         this.isGuest = false;
-        this.status = UserStatus.PENDING;  // 업그레이드 후 이메일 인증 대기 상태
-        return this;
+        this.status = UserStatus.PENDING;
+    }
+
+    public void updateProfile(String name, Gender gender, String countryOfOrigin,
+                              String personalityOrImage, String preferredNameMeaning) {
+        this.name = name;
+        this.gender = gender;
+        this.countryOfOrigin = countryOfOrigin;
+        this.personalityOrImage = personalityOrImage;
+        this.preferredNameMeaning = preferredNameMeaning;
     }
 }

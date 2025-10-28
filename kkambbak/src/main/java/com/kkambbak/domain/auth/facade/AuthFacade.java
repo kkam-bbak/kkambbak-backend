@@ -55,11 +55,11 @@ public class AuthFacade {
             throw new UserAlreadyAuthenticatedException();
         }
 
-        emailService.sendOtpEmail(email);
+        emailService.sendOtpEmail(email, false);
     }
 
     public String getEmailByCode(String code) {
-        EmailVerification emailVerification = emailVerificationRepository.findByVerificationCode(code)
+        EmailVerification emailVerification = emailVerificationRepository.findByVerificationCodeAndPending(code)
                 .orElseThrow(VerificationCodeNotFoundException::new);
 
         if (OtpStatus.EXPIRED.equals(emailVerification.getStatus())) {
