@@ -1,0 +1,3 @@
+cron:
+  # OTP 만료 작업 (5분마다 실행)
+  otp-expire-job: 0 */5 * * * *

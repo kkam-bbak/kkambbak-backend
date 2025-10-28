@@ -35,7 +35,6 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final EmailService emailService;
-    private final EmailVerificationRepository emailVerificationRepository;
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
@@ -69,7 +68,7 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         .build().toUriString();
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
-                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail);
+                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail, true);
 
                 String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
                         .queryParam("code", emailVerification.getVerificationCode())

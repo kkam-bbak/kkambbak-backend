@@ -36,6 +36,7 @@ EXPOSE 8080
 ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
+    "-Duser.timezone=Asia/Seoul", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-jar", \
     "/app/app.jar"]
@@ -50,6 +51,7 @@ COPY --from=builder /workspace/app/kkambbak-scheduler/build/libs/*.jar app.jar
 ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
+    "-Duser.timezone=Asia/Seoul", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-jar", \
     "/app/app.jar"]

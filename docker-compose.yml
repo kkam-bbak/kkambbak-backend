@@ -27,24 +27,12 @@ services:
     container_name: kkambbak
     restart: unless-stopped
     ports:
-      - "80:8080"
+      - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_DRIVER=${DB_DRIVER}
-      - JPA_DDL_AUTO=${JPA_DDL_AUTO}
-      - JPA_DIALECT=${JPA_DIALECT}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ACCESS_TOKEN_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
-      - JWT_REFRESH_TOKEN_EXPIRATION=${JWT_REFRESH_TOKEN_EXPIRATION}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI}
-      - AUTH_KEY=${AUTH_KEY}
     depends_on:
       redis:
         condition: service_healthy
@@ -59,11 +47,11 @@ services:
     image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:latest
     container_name: kkambbak-scheduler
     restart: unless-stopped
-    environment:
-      - DATABASE_URL=${DB_URL}
-      - DATABASE_USERNAME=${DB_USERNAME}
-      - DATABASE_PASSWORD=${DB_PASSWORD}
-      - DISCORD_SCHEDULER_WEBHOOK_URL=${DISCORD_SCHEDULER_WEBHOOK_URL}
+    env_file:
+      - .env
+    depends_on:
+      app:
+        condition: service_started
     networks:
       - kkambbak-network
 

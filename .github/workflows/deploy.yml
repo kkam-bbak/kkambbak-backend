@@ -88,6 +88,40 @@ jobs:
           key: ${{ secrets.NCP_SSH_KEY }}
           password: ${{ secrets.NCP_PASSWORD }}
           script: |
+            # .env 파일 생성
+            cat > /tmp/.env <<'EOF'
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DRIVER=${{ secrets.DB_DRIVER }}
+            JPA_DDL_AUTO=${{ secrets.JPA_DDL_AUTO }}
+            JPA_DIALECT=${{ secrets.JPA_DIALECT }}
+            REDIS_HOST=kkambbak-redis
+            REDIS_PORT=6379
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ACCESS_TOKEN_EXPIRATION=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }}
+            JWT_REFRESH_TOKEN_EXPIRATION=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            OAUTH2_REDIRECT_URI=${{ secrets.OAUTH2_REDIRECT_URI }}
+            AUTH_KEY=${{ secrets.AUTH_KEY }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            MAIL_SMTP_AUTH=true
+            MAIL_SMTP_STARTTLS_ENABLE=true
+            EMAIL_REDIRECT_URI=${{ secrets.EMAIL_REDIRECT_URI }}
+            EMAIL_OTP_EXPIRY_MINUTES=${{ secrets.EMAIL_OTP_EXPIRY_MINUTES }}
+            R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+            R2_ACCESS_KEY=${{ secrets.R2_ACCESS_KEY }}
+            R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}
+            R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}
+            DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}
+            DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK }}
+            EOF
+
             # Docker 로그인
             echo ${{ secrets.DOCKERHUB_TOKEN }} | /usr/bin/docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
@@ -124,33 +158,7 @@ jobs:
               --restart unless-stopped \
               --network kkambbak-network \
               -p 8080:8080 \
-              -e "DB_URL=${{ secrets.DB_URL }}" \
-              -e "DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-              -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-              -e "DB_DRIVER=${{ secrets.DB_DRIVER }}" \
-              -e "JPA_DDL_AUTO=${{ secrets.JPA_DDL_AUTO }}" \
-              -e "JPA_DIALECT=${{ secrets.JPA_DIALECT }}" \
-              -e REDIS_HOST=kkambbak-redis \
-              -e REDIS_PORT=6379 \
-              -e "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
-              -e "JWT_ACCESS_TOKEN_EXPIRATION=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }}" \
-              -e "JWT_REFRESH_TOKEN_EXPIRATION=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }}" \
-              -e "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
-              -e "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-              -e "OAUTH2_REDIRECT_URI=${{ secrets.OAUTH2_REDIRECT_URI }}" \
-              -e "AUTH_KEY=${{ secrets.AUTH_KEY }}" \
-              -e "MAIL_HOST=${{ secrets.MAIL_HOST }}" \
-              -e "MAIL_PORT=${{ secrets.MAIL_PORT }}" \
-              -e "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" \
-              -e "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" \
-              -e "EMAIL_REDIRECT_URI=${{ secrets.EMAIL_REDIRECT_URI }}" \
-              -e "EMAIL_OTP_EXPIRY_MINUTES=${{ secrets.EMAIL_OTP_EXPIRY_MINUTES }}" \
-              -e "R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}" \
-              -e "R2_ACCESS_KEY=${{ secrets.R2_ACCESS_KEY }}" \
-              -e "R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}" \
-              -e "R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}" \
-              -e "R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}" \
-              -e "DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}" \
+              --env-file /tmp/.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:latest
 
             # 기존 스케줄러 컨테이너 중지 및 제거
@@ -162,10 +170,7 @@ jobs:
               --name kkambbak-scheduler \
               --restart unless-stopped \
               --network kkambbak-network \
-              -e "DATABASE_URL=${{ secrets.DB_URL }}" \
-              -e "DATABASE_USERNAME=${{ secrets.DB_USERNAME }}" \
-              -e "DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-              -e "DISCORD_SCHEDULER_WEBHOOK_URL=${{ secrets.DISCORD_SCHEDULER_WEBHOOK_URL }}" \
+              --env-file /tmp/.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:latest
 
             # 사용하지 않는 이미지 정리
