@@ -1,7 +1,5 @@
 package com.kkambbak.domain.survey.service;
 
-import com.kkambbak.domain.survey.dto.SurveyDto;
-import com.kkambbak.domain.survey.enums.CategoryType;
 import com.kkambbak.domain.survey.enums.DifficultyLevel;
 import org.springframework.stereotype.Component;
 
@@ -10,53 +8,48 @@ import java.util.*;
 @Component
 public class Prioritizer {
 
-    // TOPIK: 난이도별 토픽
+    // TOPIK: 난이도별 전체 순서
     private static final Map<DifficultyLevel, List<String>> TOPIK_RULES = Map.of(
-            DifficultyLevel.BEGINNER,     List.of("topik_1", "topik_2"),
-            DifficultyLevel.INTERMEDIATE, List.of("topik_3", "topik_4"),
-            DifficultyLevel.ADVANCED,     List.of("topik_5", "topik_6")
+            DifficultyLevel.BEGINNER,
+            List.of("topik_1", "topik_2", "topik_3", "topik_4", "topik_5", "topik_6"),
+
+            DifficultyLevel.INTERMEDIATE,
+            List.of("topik_3", "topik_4", "topik_5", "topik_6", "topik_1", "topik_2"),
+
+            DifficultyLevel.ADVANCED,
+            List.of("topik_5", "topik_6", "topik_1", "topik_2", "topik_3", "topik_4")
     );
 
-    // CASUAL: 관심사별 토픽
+    // CASUAL: 관심사별 전체 순서
     private static final Map<String, List<String>> CASUAL_RULES;
     static {
         Map<String, List<String>> m = new LinkedHashMap<>();
-        m.put("daily expressions", List.of("emotions", "places"));
-        m.put("emotions",          List.of("emotions"));
-        m.put("food & travel",     List.of("fruits", "places"));
-        m.put("test-related",      List.of("body", "animals"));
-        m.put("slang",             List.of("emotions", "colors"));
+        m.put("daily expressions", List.of("emotions", "places", "fruits", "body", "animals", "colors"));
+        m.put("emotions",          List.of("emotions", "places", "fruits", "body", "animals", "colors"));
+        m.put("food & travel",     List.of("places", "fruits", "emotions", "body", "animals", "colors"));
+        m.put("test-related",      List.of("body", "animals", "emotions", "places", "fruits", "colors"));
+        m.put("slang",             List.of("emotions", "colors", "places", "fruits", "body", "animals"));
         CASUAL_RULES = Collections.unmodifiableMap(m);
     }
 
-     // 저장 직후/Topik 탭 기본 노출용.
-    public SurveyDto.SurveySaveResponse.Priorities buildForTopik(DifficultyLevel level) {
-        DifficultyLevel safeLevel = (level == null) ? DifficultyLevel.BEGINNER : level;
-        List<String> topics = TOPIK_RULES.getOrDefault(safeLevel, TOPIK_RULES.get(DifficultyLevel.BEGINNER));
-
-        return SurveyDto.SurveySaveResponse.Priorities.builder()
-                .categoryType(CategoryType.TOPIK)
-                .level(safeLevel)
-                .topics(topics)
-                .build();
+    // Topik 전체 순서 반환
+    public List<String> getTopikOrder(DifficultyLevel level) {
+        DifficultyLevel safeLevel = (level != null) ? level : DifficultyLevel.BEGINNER;
+        return TOPIK_RULES.getOrDefault(safeLevel, TOPIK_RULES.get(DifficultyLevel.BEGINNER));
     }
 
-    // CASUAL 탭에서 사용.
-    public SurveyDto.SurveySaveResponse.Priorities buildForCasual(String interestRaw) {
-        String interest = normalizeInterest(interestRaw);
-        List<String> topics = CASUAL_RULES.getOrDefault(interest, List.of("emotions", "places"));
-
-        return SurveyDto.SurveySaveResponse.Priorities.builder()
-                .categoryType(CategoryType.CASUAL)
-                .level(null) // CASUAL은 난이도 미사용
-                .topics(topics)
-                .build();
+    // Casual 전체 순서 반환
+    public List<String> getCasualOrder(String interests) {
+        String normalized = normalizeInterest(interests);
+        return CASUAL_RULES.getOrDefault(normalized, CASUAL_RULES.get("daily expressions"));
     }
 
-
-    // interests 입력을 단일 문자열로 정규화
+    // interests 입력 정규화
     private String normalizeInterest(Object raw) {
-        if (raw == null) return "";
+        if (raw == null) {
+            return "daily expressions";
+        }
+
         if (raw instanceof List<?> list) {
             return list.stream()
                     .filter(Objects::nonNull)
@@ -64,8 +57,10 @@ public class Prioritizer {
                     .map(v -> v.trim().toLowerCase(Locale.ROOT))
                     .filter(v -> !v.isEmpty())
                     .findFirst()
-                    .orElse("");
+                    .orElse("daily expressions");
         }
-        return String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
+
+        String result = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
+        return result.isEmpty() ? "daily expressions" : result;
     }
 }
