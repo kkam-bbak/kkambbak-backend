@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kkambbak-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-kkambbak}
+      POSTGRES_USER: ${DB_USERNAME:-kkambbak}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kkambbak123}
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - kkambbak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-kkambbak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: kkambbak-redis
@@ -33,7 +54,11 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    volumes:
+      - ./logs:/app/logs
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -49,6 +74,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       app:
         condition: service_started
@@ -60,4 +87,5 @@ networks:
     driver: bridge
 
 volumes:
+  postgres-data:
   redis-data:

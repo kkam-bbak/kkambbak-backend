@@ -34,6 +34,12 @@ jobs:
           name: build-artifacts
           path: kkambbak/build/libs/*.jar
 
+      - name: Upload monitoring configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-configs
+          path: monitoring/
+
   dockerize:
     runs-on: ubuntu-latest
     needs: build
@@ -80,6 +86,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Download monitoring configs
+        uses: actions/download-artifact@v4
+        with:
+          name: monitoring-configs
+          path: ./monitoring
+
+      - name: Upload monitoring configs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USERNAME }}
+          key: ${{ secrets.NCP_SSH_KEY }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          source: "./monitoring/*"
+          target: "/home/ubuntu/kkambbak/"
+          strip_components: 0
+
       - name: Deploy to Naver Cloud
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -120,6 +143,8 @@ jobs:
             R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}
             DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}
             DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK }}
+            GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
+            GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
             EOF
 
             # Docker 로그인
@@ -152,12 +177,16 @@ jobs:
             /usr/bin/docker stop kkambbak || true
             /usr/bin/docker rm kkambbak || true
 
+            # 로그 디렉토리 생성
+            mkdir -p /home/ubuntu/kkambbak/logs
+
             # 애플리케이션 컨테이너 실행 (포트 8080)
             /usr/bin/docker run -d \
               --name kkambbak \
               --restart unless-stopped \
               --network kkambbak-network \
               -p 8080:8080 \
+              -v /home/ubuntu/kkambbak/logs:/app/logs \
               --env-file /tmp/.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:latest
 
@@ -170,8 +199,72 @@ jobs:
               --name kkambbak-scheduler \
               --restart unless-stopped \
               --network kkambbak-network \
+              -v /home/ubuntu/kkambbak/logs:/app/logs \
               --env-file /tmp/.env \
               ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:latest
+
+            # 모니터링 스택 배포
+
+            # 기존 모니터링 컨테이너 중지 및 제거
+            /usr/bin/docker stop kkambbak-prometheus || true
+            /usr/bin/docker rm kkambbak-prometheus || true
+            /usr/bin/docker stop kkambbak-loki || true
+            /usr/bin/docker rm kkambbak-loki || true
+            /usr/bin/docker stop kkambbak-promtail || true
+            /usr/bin/docker rm kkambbak-promtail || true
+            /usr/bin/docker stop kkambbak-grafana || true
+            /usr/bin/docker rm kkambbak-grafana || true
+
+            # 모니터링 볼륨 생성
+            /usr/bin/docker volume create prometheus-data || true
+            /usr/bin/docker volume create loki-data || true
+            /usr/bin/docker volume create grafana-data || true
+
+            # Prometheus 실행
+            /usr/bin/docker run -d \
+              --name kkambbak-prometheus \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -p 9090:9090 \
+              -v /home/ubuntu/kkambbak/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+              -v prometheus-data:/prometheus \
+              prom/prometheus:latest \
+              --config.file=/etc/prometheus/prometheus.yml \
+              --storage.tsdb.path=/prometheus
+
+            # Loki 실행
+            /usr/bin/docker run -d \
+              --name kkambbak-loki \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -p 3100:3100 \
+              -v /home/ubuntu/kkambbak/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml \
+              -v loki-data:/loki \
+              grafana/loki:latest \
+              -config.file=/etc/loki/local-config.yaml
+
+            # Promtail 실행
+            /usr/bin/docker run -d \
+              --name kkambbak-promtail \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -v /home/ubuntu/kkambbak/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml \
+              -v /home/ubuntu/kkambbak/logs:/var/log/app \
+              grafana/promtail:latest \
+              -config.file=/etc/promtail/config.yml
+
+            # Grafana 실행
+            /usr/bin/docker run -d \
+              --name kkambbak-grafana \
+              --restart unless-stopped \
+              --network kkambbak-network \
+              -p 3001:3000 \
+              -v grafana-data:/var/lib/grafana \
+              -v /home/ubuntu/kkambbak/monitoring/grafana/provisioning:/etc/grafana/provisioning \
+              -e GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }} \
+              -e GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }} \
+              -e GF_USERS_ALLOW_SIGN_UP=false \
+              grafana/grafana:latest
 
             # 사용하지 않는 이미지 정리
             /usr/bin/docker image prune -af

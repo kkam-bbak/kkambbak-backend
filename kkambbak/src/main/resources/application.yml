@@ -35,3 +35,21 @@ app:
     key: ${AUTH_KEY:test-auth-key-1234}
   user:
     default-profile-image: ${DEFAULT_PROFILE_IMAGE:https://DEFAULT_PROFILE_IMAGE}
+
+# Actuator & Prometheus 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:default}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
