@@ -20,6 +20,13 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+server:
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      protocol-header-value: https
+
 jwt:
   secret: ${JWT_SECRET:test-jwt-secret-key-for-testing-minimum-256-bits-required-for-hs256-algorithm-security}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
