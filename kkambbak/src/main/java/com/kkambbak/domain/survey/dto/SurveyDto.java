@@ -30,18 +30,6 @@ public class SurveyDto {
         // 전체 설문 응답
         @NotNull
         @NotEmpty
-        private Map<String, Object> rawResponses;
-    }
-
-
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SurveySaveResponse {
-        private Long surveyId;
-        private Boolean completed;
-        private LocalDateTime createdAt;
+        private String rawResponses;
     }
 }

@@ -20,17 +20,17 @@ public class SurveyController {
     private final SurveyService surveyService;
 
     // 설문 저장
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ApiResponse<SurveyDto.SurveySaveResponse> save(
+    @PostMapping
+    public ApiResponse<Void> save(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody SurveyDto.SurveySaveRequest request
     ) {
-        var body = surveyService.save(userDetails.getUserId(), request);
-        return ApiResponse.ok(body);
+       surveyService.save(userDetails.getUserId(), request);
+        return ApiResponse.ok();
     }
 
     // 설문 완료 여부 확인
-    @GetMapping(value = "/check", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/check")
     public ApiResponse<Map<String, Boolean>> check(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {

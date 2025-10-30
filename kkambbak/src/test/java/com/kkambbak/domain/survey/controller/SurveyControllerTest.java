@@ -9,19 +9,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.ResourceSnippetParameters.builder;
 
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
@@ -32,29 +30,24 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
     private SurveyService surveyService;
 
     @Test
-    @DisplayName("설문 저장 성공 — 200 OK")
+    @DisplayName("설문 저장 성공 — 200 OK (body 없음)")
     void saveSurvey_success_docs() throws Exception {
-        // given
-        Map<String, Object> raw = new HashMap<>();
-        raw.put("Why are you learning Korean?", "Preparing for the TOPIK exam");
-        raw.put("How do you like to study?", "Quick and focused learning");
-        raw.put("Which level suits you best?", "BEGINNER");
-        raw.put("What kind of words are you most interested in?", "daily expressions");
-        raw.put("How much time do you want to spend per session?", "5mins");
+        String rawJson = """
+                {"Why are you learning Korean?": "Preparing for the TOPIK exam",
+                 "How do you like to study?": "Quick and focused learning",
+                 "Which level suits you best?": "BEGINNER",
+                 "How much time do you want to spend per session?": "5mins",
+                 "What kind of words are you most interested in?": "daily expressions"}
+                """;
 
         SurveyDto.SurveySaveRequest req = SurveyDto.SurveySaveRequest.builder()
                 .level(DifficultyLevel.BEGINNER)
                 .interests("daily expressions")
-                .rawResponses(raw)
+                .rawResponses(rawJson)
                 .build();
 
-        SurveyDto.SurveySaveResponse resp = SurveyDto.SurveySaveResponse.builder()
-                .surveyId(123L)
-                .completed(true)
-                .createdAt(LocalDateTime.of(2025, 10, 24, 12, 34, 56))
-                .build();
-
-        given(surveyService.save(eq(1L), any(SurveyDto.SurveySaveRequest.class))).willReturn(resp);
+        // 서비스는 void 메서드
+        doNothing().when(surveyService).save(eq(1L), any(SurveyDto.SurveySaveRequest.class));
 
         // when & then
         mockMvc.perform(
@@ -71,20 +64,22 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
                         resource(builder()
                                 .tag("Surveys")
                                 .summary("설문 저장")
-                                .description("사용자의 설문을 최초 1회 저장합니다. 동일 사용자 재요청 시 저장하지 않고 기존 설문 정보를 반환합니다.")
+                                .description("""
+                                        사용자의 설문을 최초 1회 저장합니다.
+                                        동일 사용자 재요청 시 저장을 생략(중복 방지)하고 성공(status)만 반환합니다.
+                                        """)
+                                .requestHeaders(
+                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                )
                                 .requestFields(
                                         fieldWithPath("level").description("난이도 (BEGINNER | INTERMEDIATE | ADVANCED)"),
                                         fieldWithPath("interests").description("관심사 (예: daily expressions)"),
-                                        fieldWithPath("rawResponses").description("원본 설문 응답 맵"),
-                                        fieldWithPath("rawResponses.*").description("각 질문 키/값")
+                                        fieldWithPath("rawResponses").description("원본 설문 응답(JSON 문자열)")
                                 )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").description("상태 코드 (예: C000=success)"),
                                         fieldWithPath("status.message").description("상태 메시지"),
-                                        fieldWithPath("status.description").optional().description("추가 설명 (nullable)"),
-                                        fieldWithPath("body.surveyId").description("저장된 설문 ID"),
-                                        fieldWithPath("body.completed").description("설문 완료 여부(true)"),
-                                        fieldWithPath("body.createdAt").description("설문 생성 시각 (ISO-8601)")
+                                        fieldWithPath("status.description").optional().description("추가 설명 (nullable)")
                                 )
                                 .build())
                 ));
@@ -109,6 +104,9 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
                                 .tag("Surveys")
                                 .summary("설문 완료 여부 확인")
                                 .description("해당 사용자가 설문을 완료했는지 여부를 반환합니다.")
+                                .requestHeaders(
+                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").description("상태 코드"),
                                         fieldWithPath("status.message").description("상태 메시지"),
@@ -138,6 +136,9 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
                                 .tag("Surveys")
                                 .summary("설문 완료 여부 확인")
                                 .description("해당 사용자가 설문을 완료했는지 여부를 반환합니다.")
+                                .requestHeaders(
+                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").description("상태 코드"),
                                         fieldWithPath("status.message").description("상태 메시지"),
