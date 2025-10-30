@@ -58,6 +58,12 @@ public class ScheduledTaskTracingAspect {
     @AfterThrowing(pointcut = "methodAnnotatedWithScheduled() && atExecutionPointInMyNamespace()", throwing = "exception")
     public void handleException(JoinPoint joinPoint, Throwable exception) {
         String jobName = joinPoint.getTarget().getClass().getSimpleName();
-        log.error("[{}] threw an exception: ", jobName, exception);
+        log.error("[{}] threw an exception: {}", jobName, exception.getMessage());
+
+        try {
+            discordClient.sendSchedulerError(jobName, (Exception) exception);
+        } catch (Exception discordException) {
+            log.warn("Failed to send Discord notification for scheduler error", discordException);
+        }
     }
 }

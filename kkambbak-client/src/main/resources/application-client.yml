@@ -31,5 +31,6 @@ cloudflare:
     public-domain: ${R2_PUBLIC_DOMAIN:https://pub-test.r2.dev}
 
 discord:
-  webhook:
-    url: ${DISCORD_WEBHOOK_URL:}
+  scheduler:
+    webhook:
+      url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}

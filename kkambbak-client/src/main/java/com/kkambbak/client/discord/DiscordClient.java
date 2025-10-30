@@ -19,8 +19,8 @@ import java.util.Map;
 @Component
 public class DiscordClient {
 
-    @Value("${discord.webhook.url:}")
-    private String webhookUrl;
+    @Value("${discord.scheduler.webhook.url:}")
+    private String schedulerWebhookUrl;
 
     private final RestTemplate restTemplate;
 
@@ -32,14 +32,14 @@ public class DiscordClient {
      * 스케줄러 에러를 디스코드로 전송
      */
     public void sendSchedulerError(String jobName, Exception exception) {
-        if (webhookUrl == null || webhookUrl.isEmpty()) {
-            log.warn("Discord webhook URL is not configured. Skipping notification.");
+        if (schedulerWebhookUrl == null || schedulerWebhookUrl.isEmpty()) {
+            log.warn("Discord scheduler webhook URL is not configured. Skipping notification.");
             return;
         }
 
         try {
             String message = buildErrorMessage(jobName, exception);
-            sendMessage(message);
+            sendMessage(message, schedulerWebhookUrl);
         } catch (Exception e) {
             log.error("Failed to send Discord webhook notification", e);
         }
@@ -49,14 +49,14 @@ public class DiscordClient {
      * 스케줄러 성공 알림을 디스코드로 전송
      */
     public void sendSchedulerSuccess(String jobName, double executionTimeSeconds) {
-        if (webhookUrl == null || webhookUrl.isEmpty()) {
-            log.warn("Discord webhook URL is not configured. Skipping notification.");
+        if (schedulerWebhookUrl == null || schedulerWebhookUrl.isEmpty()) {
+            log.warn("Discord scheduler webhook URL is not configured. Skipping notification.");
             return;
         }
 
         try {
             String message = buildSuccessMessage(jobName, executionTimeSeconds);
-            sendMessage(message);
+            sendMessage(message, schedulerWebhookUrl);
         } catch (Exception e) {
             log.error("Failed to send Discord webhook notification", e);
         }
@@ -65,7 +65,7 @@ public class DiscordClient {
     /**
      * 디스코드 메시지 전송
      */
-    private void sendMessage(String content) {
+    private void sendMessage(String content, String webhookUrl) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -89,10 +89,8 @@ public class DiscordClient {
         sb.append("Time: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
         sb.append("Error: ").append(exception.getClass().getSimpleName()).append("\n");
         sb.append("Message: ").append(exception.getMessage()).append("\n");
-        sb.append("\n--- Stack Trace ---\n");
-        sb.append(getStackTraceString(exception));
         sb.append("```");
-        return sb.toString();
+        return ensureMaxLength(sb.toString(), 2000);
     }
 
     /**
@@ -111,18 +109,12 @@ public class DiscordClient {
     }
 
     /**
-     * StackTrace를 문자열로 변환
+     * 메시지를 Discord 최대 길이(2000자)로 제한
      */
-    private String getStackTraceString(Exception e) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-        String stackTrace = sw.toString();
-
-        // Discord 메시지 길이 제한을 고려해서 잘라냄
-        if (stackTrace.length() > 1500) {
-            return stackTrace.substring(0, 1500) + "\n... (truncated)";
+    private String ensureMaxLength(String message, int maxLength) {
+        if (message.length() > maxLength) {
+            return message.substring(0, maxLength - 20) + "\n... (생략됨)";
         }
-        return stackTrace;
+        return message;
     }
 }

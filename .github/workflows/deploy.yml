@@ -25,14 +25,22 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew :kkambbak:build
+      - name: Run tests
+        run: ./gradlew test --no-daemon --parallel
 
-      - name: Upload build artifact
+      - name: Generate OpenAPI spec
+        run: ./gradlew :kkambbak:openapi3 --no-daemon
+
+      - name: Build with Gradle
+        run: ./gradlew :kkambbak:assemble :kkambbak-scheduler:assemble --no-daemon --parallel
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: kkambbak/build/libs/*.jar
+          path: |
+            kkambbak/build/libs/*.jar
+            kkambbak-scheduler/build/libs/*.jar
 
       - name: Upload monitoring configs
         uses: actions/upload-artifact@v4
@@ -143,6 +151,7 @@ jobs:
             R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}
             DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}
             DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK }}
+            DISCORD_SCHEDULER_WEBHOOK_URL=${{ secrets.DISCORD_SCHEDULER_WEBHOOK_URL }}
             GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
             GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
             EOF
@@ -242,6 +251,21 @@ jobs:
               -v loki-data:/loki \
               grafana/loki:latest \
               -config.file=/etc/loki/local-config.yaml
+
+            # Loki & Prometheus IP 주소 취득
+            sleep 2
+            LOKI_IP=$(/usr/bin/docker inspect kkambbak-loki -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+            PROMETHEUS_IP=$(/usr/bin/docker inspect kkambbak-prometheus -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+
+            # Promtail 설정 생성
+            /bin/sed -i "s|http://loki:3100|http://${LOKI_IP}:3100|g" /home/ubuntu/kkambbak/monitoring/promtail/promtail-config.yml
+
+            # Prometheus 설정 생성
+            /bin/sed -i "s|prometheus:9090|${PROMETHEUS_IP}:9090|g" /home/ubuntu/kkambbak/monitoring/prometheus/prometheus.yml
+
+            # Grafana 데이터소스 설정 생성
+            /bin/sed "s|http://prometheus:9090|http://${PROMETHEUS_IP}:9090|g; s|http://loki:3100|http://${LOKI_IP}:3100|g" /home/ubuntu/kkambbak/monitoring/grafana/provisioning/datasources/datasources.yml > /tmp/datasources.yml
+            mv /tmp/datasources.yml /home/ubuntu/kkambbak/monitoring/grafana/provisioning/datasources/datasources.yml
 
             # Promtail 실행
             /usr/bin/docker run -d \
