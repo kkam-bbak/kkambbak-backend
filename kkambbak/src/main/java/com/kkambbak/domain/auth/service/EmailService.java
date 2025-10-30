@@ -44,11 +44,7 @@ public class EmailService {
         return String.format("%06d", random.nextInt(1000000));
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public EmailVerification sendOtpEmail(String email) {
-        return sendOtpEmail(email, true);
-    }
-
+    // true: 새로운 임시코드 생성, false: 기존 임시코드 재사용
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public EmailVerification sendOtpEmail(String email, boolean isNewFlow) {
         return retryWithBackoff(() -> {
@@ -59,8 +55,10 @@ public class EmailService {
                     emailVerificationRepository.findAllUnverifiedByUserId(user.getId());
 
             String existingVerificationCode = null;
-            if (!unverifiedOtps.isEmpty() && !isNewFlow) {
-                existingVerificationCode = unverifiedOtps.get(0).getVerificationCode();
+            if (!isNewFlow) {
+                existingVerificationCode = emailVerificationRepository.findMostRecentByUserId(user.getId())
+                        .map(EmailVerification::getVerificationCode)
+                        .orElse(null);
             }
 
             for (EmailVerification otp : unverifiedOtps) {

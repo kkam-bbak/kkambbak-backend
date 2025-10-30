@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+  external_labels:
+    cluster: 'kkambbak-cluster'
+    environment: 'production'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  - job_name: 'kkambbak-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['kkambbak:8080']
+        labels:
+          application: 'kkambbak-api'
+          service: 'api'
+          module: 'client'

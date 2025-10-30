@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kkambbak-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-kkambbak}
+      POSTGRES_USER: ${DB_USERNAME:-kkambbak}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kkambbak123}
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - kkambbak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-kkambbak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: kkambbak-redis
@@ -19,31 +40,45 @@ services:
       retries: 3
 
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
     image: ${DOCKERHUB_USERNAME}/kkambbak:latest
     container_name: kkambbak
     restart: unless-stopped
     ports:
-      - "80:8080"
+      - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_DRIVER=${DB_DRIVER}
-      - JPA_DDL_AUTO=${JPA_DDL_AUTO}
-      - JPA_DIALECT=${JPA_DIALECT}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ACCESS_TOKEN_EXPIRATION=${JWT_ACCESS_TOKEN_EXPIRATION}
-      - JWT_REFRESH_TOKEN_EXPIRATION=${JWT_REFRESH_TOKEN_EXPIRATION}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI}
-      - AUTH_KEY=${AUTH_KEY}
+    volumes:
+      - ./logs:/app/logs
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - kkambbak-network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: scheduler
+    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:latest
+    container_name: kkambbak-scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      app:
+        condition: service_started
     networks:
       - kkambbak-network
 
@@ -52,4 +87,5 @@ networks:
     driver: bridge
 
 volumes:
+  postgres-data:
   redis-data:
