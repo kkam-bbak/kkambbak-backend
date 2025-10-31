@@ -34,3 +34,9 @@ discord:
   scheduler:
     webhook:
       url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}
+
+kakao:
+  pay:
+    admin-key: ${KAKAO_PAY_ADMIN_KEY:test_admin_key}
+    cid: ${KAKAO_PAY_CID:test_cid}
+    api-url: ${KAKAO_PAY_API_URL:https://kapi.kakao.com}
