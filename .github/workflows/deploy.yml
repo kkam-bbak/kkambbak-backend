@@ -239,7 +239,9 @@ jobs:
               -v prometheus-data:/prometheus \
               prom/prometheus:latest \
               --config.file=/etc/prometheus/prometheus.yml \
-              --storage.tsdb.path=/prometheus
+              --storage.tsdb.path=/prometheus \
+              --web.external-url=${{ secrets.PROMETHEUS_URL }} \
+              --web.route-prefix=/
 
             # Loki 실행
             /usr/bin/docker run -d \
@@ -288,6 +290,7 @@ jobs:
               -e GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }} \
               -e GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }} \
               -e GF_USERS_ALLOW_SIGN_UP=false \
+              -e GF_SERVER_ROOT_URL=${{ secrets.GRAFANA_URL }} \
               grafana/grafana:latest
 
             # 사용하지 않는 이미지 정리
