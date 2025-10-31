@@ -127,6 +127,7 @@ jobs:
             DB_DRIVER=${{ secrets.DB_DRIVER }}
             JPA_DDL_AUTO=${{ secrets.JPA_DDL_AUTO }}
             JPA_DIALECT=${{ secrets.JPA_DIALECT }}
+            CONNECTION_INIT_SQL=${{ secrets.CONNECTION_INIT_SQL }}
             REDIS_HOST=kkambbak-redis
             REDIS_PORT=6379
             JWT_SECRET=${{ secrets.JWT_SECRET }}

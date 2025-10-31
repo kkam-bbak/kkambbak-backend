@@ -51,6 +51,8 @@ public class LogbookConfig {
                             path.contains("/sitemap.xml") ||
                             path.contains("MGLNDD") ||
                             path.contains("/manager") ||
+                            path.contains("/backup") ||
+                            path.contains("/bin") ||
                             path.endsWith(".xml") ||
                             path.endsWith(".env")
             );
