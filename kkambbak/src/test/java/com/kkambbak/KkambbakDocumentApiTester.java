@@ -1,7 +1,6 @@
 package com.kkambbak;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kkambbak.domain.payment.facade.PaymentFacade;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.JwtAuthenticationFilter;
 import com.kkambbak.global.jwt.JwtUtil;
@@ -55,9 +54,6 @@ public class KkambbakDocumentApiTester {
 
     @MockitoBean
     protected TokenBlacklistService tokenBlacklistService;
-
-    @MockitoBean
-    protected PaymentFacade paymentFacade;
 
     protected final static String AUTH_HEADER = "Authorization";
     protected final static String TEST_ACCESS_TOKEN = "Bearer testAccessToken";

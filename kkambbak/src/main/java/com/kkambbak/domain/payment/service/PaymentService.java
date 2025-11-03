@@ -7,20 +7,31 @@ import com.kkambbak.core.entity.payment.SubscriptionPlan;
 import com.kkambbak.core.entity.payment.enums.PaymentMethod;
 import com.kkambbak.core.entity.payment.enums.PaymentStatus;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
+import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.core.repository.payment.SubscriptionPlanRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
+import com.kkambbak.core.repository.user.UserRepository;
+import com.kkambbak.domain.payment.dto.PaymentDetailDto;
 import com.kkambbak.domain.payment.dto.PaymentDto;
+import com.kkambbak.domain.payment.dto.PaymentResultDto;
 import com.kkambbak.domain.payment.exception.*;
+import com.kkambbak.domain.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -33,6 +44,7 @@ public class PaymentService {
     private final PayHistoryRepository payHistoryRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final UserRepository userRepository;
     
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId) {
         try {
@@ -129,6 +141,82 @@ public class PaymentService {
             log.error("Failed to capture payment - userId: {}, paymentId: {}, orderId: {}", userId, paymentId, orderId, e);
             throw new PaymentCaptureFailedException(e.getMessage());
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentDetailDto getPaymentDetail(Long userId, Long paymentId) {
+        PayHistory payHistory = payHistoryRepository.findById(paymentId)
+            .orElseThrow(PaymentNotFoundException::new);
+
+        if (!payHistory.getUserId().equals(userId)) {
+            throw new UnauthorizedPaymentAccessException();
+        }
+
+        return buildPaymentDetail(payHistory);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentDetailDto> getPaymentList(Long userId, Pageable pageable) {
+        if (pageable.getPageNumber() < 0) {
+            throw new InvalidPageRequestException("Page number must be >= 0");
+        }
+
+        Page<PayHistory> results = payHistoryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+
+        List<PaymentDetailDto> dtos = results.getContent().stream()
+            .map(this::buildPaymentDetail)
+            .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, results.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResultDto getPaymentResult(Long userId) {
+        Subscription activeSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+            .orElseThrow(SubscriptionNotFoundException::new);
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(UserNotFoundException::new);
+
+        String planName = activeSubscription.getPlan().getName();
+
+        return PaymentResultDto.builder()
+            .userName(user.getName())
+            .userEmail(user.getEmail())
+            .planName(planName)
+            .build();
+    }
+
+    private PaymentDetailDto buildPaymentDetail(PayHistory payHistory) {
+        User user = userRepository.findById(payHistory.getUserId())
+            .orElseThrow(UserNotFoundException::new);
+
+        String planName = "N/A";
+        LocalDateTime subscriptionStartDate = null;
+        LocalDateTime subscriptionEndDate = null;
+
+        if (payHistory.getSubscriptionId() != null) {
+            Subscription subscription = subscriptionRepository.findById(payHistory.getSubscriptionId())
+                .orElse(null);
+            if (subscription != null) {
+                planName = subscription.getPlan().getName();
+                subscriptionStartDate = subscription.getStartDate();
+                subscriptionEndDate = subscription.getExpiredAt() != null ? subscription.getExpiredAt() : subscription.getEndDate();
+            }
+        }
+
+        return PaymentDetailDto.builder()
+            .paymentId(payHistory.getId())
+            .userName(user.getName())
+            .userEmail(user.getEmail())
+            .planName(planName)
+            .amount(payHistory.getAmount())
+            .status(payHistory.getStatus().toString())
+            .createdAt(payHistory.getCreatedAt())
+            .paidAt(payHistory.getPaidAt())
+            .subscriptionStartDate(subscriptionStartDate)
+            .subscriptionEndDate(subscriptionEndDate)
+            .build();
     }
 
 }

@@ -1,11 +1,16 @@
 package com.kkambbak.domain.payment.controller;
 
+import com.kkambbak.domain.payment.dto.PaymentDetailDto;
 import com.kkambbak.domain.payment.dto.PaymentDto;
+import com.kkambbak.domain.payment.dto.PaymentResultDto;
 import com.kkambbak.domain.payment.facade.PaymentFacade;
+import com.kkambbak.domain.payment.service.PaymentService;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentFacade paymentFacade;
+    private final PaymentService paymentService;
 
     @PostMapping("/create/{planId}")
     public ApiResponse<PaymentDto.CreateResponse> createPayment(
@@ -36,5 +42,34 @@ public class PaymentController {
         Long userId = userDetails.getUserId();
         paymentFacade.capturePayment(userId, request.getPaymentId(), request.getOrderId(), request.getPgToken());
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/{paymentId}")
+    public ApiResponse<PaymentDetailDto> getPaymentDetail(
+        @AuthenticationPrincipal UserDetailsImpl userDetails,
+        @PathVariable Long paymentId
+    ) {
+        Long userId = userDetails.getUserId();
+        PaymentDetailDto response = paymentService.getPaymentDetail(userId, paymentId);
+        return ApiResponse.ok(response);
+    }
+
+    @GetMapping("/list")
+    public ApiResponse<PaymentDetailDto.Response> getPaymentList(
+        @AuthenticationPrincipal UserDetailsImpl userDetails,
+        Pageable pageable
+    ) {
+        Long userId = userDetails.getUserId();
+        Page<PaymentDetailDto> page = paymentService.getPaymentList(userId, pageable);
+        return ApiResponse.ok(PaymentDetailDto.Response.from(page));
+    }
+
+    @GetMapping("/result")
+    public ApiResponse<PaymentResultDto> getPaymentResult(
+        @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Long userId = userDetails.getUserId();
+        PaymentResultDto response = paymentService.getPaymentResult(userId);
+        return ApiResponse.ok(response);
     }
 }

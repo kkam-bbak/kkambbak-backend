@@ -15,7 +15,9 @@ public enum PaymentErrorCode implements ResponseCode {
     PAYMENT_CAPTURE_FAILED("PA005", "Payment capture failed"),
     INVALID_PAYMENT_STATUS("PA006", "Invalid payment status"),
     ALREADY_SUBSCRIBED("PA007", "Already subscribed"),
-    PAYMENT_PENDING("PA008", "Payment is pending");
+    PAYMENT_PENDING("PA008", "Payment is pending"),
+    SUBSCRIPTION_NOT_FOUND("PA009", "Subscription not found"),
+    INVALID_PAGE_REQUEST("PA010", "Invalid page request");
 
     private final String statusCode;
     private final String message;
