@@ -1,11 +1,17 @@
 package com.kkambbak.client.payment.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -20,24 +26,38 @@ public class KakaoPayService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${kakao.pay.admin-key:test_admin_key}")
-    private String kakaoAdminKey;
+    @Value("${kakao.pay.client-id:test_client_id}")
+    private String kakaoClientId;
+
+    @Value("${kakao.pay.client-secret:test_client_secret}")
+    private String kakaoClientSecret;
+
+    @Value("${kakao.pay.secret-key:test_secret_key}")
+    private String kakaoSecretKey;
 
     @Value("${kakao.pay.cid:test_cid}")
     private String cid;
 
-    @Value("${kakao.pay.api-url:https://kapi.kakao.com}")
+    @Value("${kakao.pay.api-url:https://test.kakao.com}")
     private String kakaoPayApiUrl;
+
+    @Value("${kakao.pay.callback.approval-url:http://localhost:3000/payment/success}")
+    private String approvalUrl;
+
+    @Value("${kakao.pay.callback.cancel-url:http://localhost:3000/payment/fail}")
+    private String cancelUrl;
+
+    @Value("${kakao.pay.callback.fail-url:http://localhost:3000/payment/fail}")
+    private String failUrl;
 
     /**
      * 카카오페이 결제 준비
      */
     public Map<String, Object> readyPayment(String partnerOrderId, String partnerUserId,
                                             String itemName, Integer quantity, Integer totalAmount,
-                                            Integer taxFreeAmount, String approvalUrl,
-                                            String cancelUrl, String failUrl) throws IOException {
+                                            Integer taxFreeAmount) throws IOException {
         Map<String, Object> requestBody = createReadyRequest(partnerOrderId, partnerUserId,
-                itemName, quantity, totalAmount, taxFreeAmount, approvalUrl, cancelUrl, failUrl);
+                itemName, quantity, totalAmount, taxFreeAmount);
 
         String url = kakaoPayApiUrl + "/v1/payment/ready";
         log.info("Ready payment - partnerOrderId: {}, itemName: {}, totalAmount: {}",
@@ -113,10 +133,9 @@ public class KakaoPayService {
      */
     public Map<String, Object> readySubscription(String partnerOrderId, String partnerUserId,
                                                  String itemName, Integer quantity, Integer totalAmount,
-                                                 Integer taxFreeAmount, String approvalUrl,
-                                                 String cancelUrl, String failUrl) throws IOException {
+                                                 Integer taxFreeAmount) throws IOException {
         Map<String, Object> requestBody = createReadyRequest(partnerOrderId, partnerUserId,
-                itemName, quantity, totalAmount, taxFreeAmount, approvalUrl, cancelUrl, failUrl);
+                itemName, quantity, totalAmount, taxFreeAmount);
 
         String url = kakaoPayApiUrl + "/v1/payment/subscription";
         log.info("Ready subscription - partnerOrderId: {}, itemName: {}, totalAmount: {}",
@@ -161,8 +180,7 @@ public class KakaoPayService {
      */
     private Map<String, Object> createReadyRequest(String partnerOrderId, String partnerUserId,
                                                    String itemName, Integer quantity, Integer totalAmount,
-                                                   Integer taxFreeAmount, String approvalUrl,
-                                                   String cancelUrl, String failUrl) {
+                                                   Integer taxFreeAmount) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("cid", cid);
         requestBody.put("partner_order_id", partnerOrderId);
@@ -171,9 +189,9 @@ public class KakaoPayService {
         requestBody.put("quantity", quantity);
         requestBody.put("total_amount", totalAmount);
         requestBody.put("tax_free_amount", taxFreeAmount);
-        requestBody.put("approval_url", approvalUrl);
-        requestBody.put("cancel_url", cancelUrl);
-        requestBody.put("fail_url", failUrl);
+        requestBody.put("approval_url", this.approvalUrl);
+        requestBody.put("cancel_url", this.cancelUrl);
+        requestBody.put("fail_url", this.failUrl);
         return requestBody;
     }
 
@@ -182,28 +200,58 @@ public class KakaoPayService {
      */
     private Map<String, Object> makePostRequest(String url, Map<String, Object> requestBody) throws IOException {
         try {
-            HttpHeaders headers = getHeaders();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "SECRET_KEY " + kakaoSecretKey);
+
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
-
-            return response;
+            return restTemplate.exchange(url, HttpMethod.POST, request, new ParameterizedTypeReference<Map<String, Object>>() {})
+                .getBody();
 
         } catch (Exception e) {
-            log.error("Failed to make POST request to: {}", url, e);
-            throw new IOException("API request failed", e);
+            String errorMessage = extractKakaoPayErrorMessage(e);
+            log.error("Failed to make POST request to: {} - {}", url, errorMessage, e);
+            throw new IOException(errorMessage, e);
         }
     }
 
     /**
-     * 카카오페이 API 헤더 생성
+     * KakaoPay 에러 응답에서 상세 메시지 추출
      */
-    private HttpHeaders getHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "KakaoAK " + kakaoAdminKey);
-        headers.set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
+    private String extractKakaoPayErrorMessage(Exception e) {
+        if (e instanceof HttpClientErrorException httpEx) {
+            try {
+                String responseBody = httpEx.getResponseBodyAsString();
+                Map<String, Object> errorResponse = new ObjectMapper()
+                    .readValue(responseBody, new TypeReference<>() {});
 
-        return headers;
+                String errorMessage = (String) errorResponse.get("error_message");
+                Integer errorCode = (Integer) errorResponse.get("error_code");
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("[KakaoPay Error] ");
+                if (errorCode != null) {
+                    sb.append("Code: ").append(errorCode).append(" ");
+                }
+                if (errorMessage != null) {
+                    sb.append("Message: ").append(errorMessage);
+                }
+
+                Object extrasObj = errorResponse.get("extras");
+                if (extrasObj instanceof Map<?, ?> extras) {
+                    Object methodResult = extras.get("method_result_message");
+                    if (methodResult != null) {
+                        sb.append(" (").append(methodResult).append(")");
+                    }
+                }
+
+                return sb.toString();
+            } catch (Exception parseEx) {
+                log.debug("Failed to parse KakaoPay error response", parseEx);
+                return "KakaoPay API 요청 실패: " + e.getMessage();
+            }
+        }
+        return "API 요청 실패: " + e.getMessage();
     }
+
 }

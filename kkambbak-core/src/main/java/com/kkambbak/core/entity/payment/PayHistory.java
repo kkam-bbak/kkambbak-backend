@@ -54,14 +54,19 @@ public class PayHistory extends BaseEntity {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
-    public void complete(String transactionId, Map<String, Object> paymentData) {
+    public void complete(String transactionId, Map<String, Object> paymentData, Long subscriptionId) {
         this.status = PaymentStatus.COMPLETED;
         this.transactionId = transactionId;
         this.paymentData = paymentData;
+        this.subscriptionId = subscriptionId;
         this.paidAt = LocalDateTime.now();
     }
 
     public void fail() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    public void setSubscriptionId(Long subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 }

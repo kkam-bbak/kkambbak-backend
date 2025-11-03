@@ -37,6 +37,12 @@ discord:
 
 kakao:
   pay:
-    admin-key: ${KAKAO_PAY_ADMIN_KEY:test_admin_key}
-    cid: ${KAKAO_PAY_CID:test_cid}
-    api-url: ${KAKAO_PAY_API_URL:https://kapi.kakao.com}
+    client-id: ${KAKAO_PAY_CLIENT_ID:test_client_id}
+    client-secret: ${KAKAO_PAY_CLIENT_SECRET:test_client_secret}
+    secret-key: ${KAKAO_PAY_SECRET_KEY:test_secret_key}
+    cid: ${KAKAO_PAY_CID:test}
+    api-url: ${KAKAO_PAY_API_URL:https://test.kakao.com}
+    callback:
+      approval-url: ${KAKAO_PAY_APPROVAL_URL:http://localhost:3000/payment/success}
+      cancel-url: ${KAKAO_PAY_CANCEL_URL:http://localhost:3000/payment/fail}
+      fail-url: ${KAKAO_PAY_FAIL_URL:http://localhost:3000/payment/fail}

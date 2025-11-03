@@ -43,12 +43,16 @@ public class Subscription extends BaseEntity {
     @Column(length = 255)
     private String billingKey;
 
+    @Column(name = "expired_at")
+    private LocalDateTime expiredAt;
+
     public boolean isActive() {
         return status == SubscriptionStatus.ACTIVE && LocalDateTime.now().isBefore(endDate);
     }
 
     public void expire() {
         this.status = SubscriptionStatus.EXPIRED;
+        this.expiredAt = LocalDateTime.now();
     }
 
     public void cancel() {
