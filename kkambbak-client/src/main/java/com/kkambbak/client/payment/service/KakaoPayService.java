@@ -38,6 +38,9 @@ public class KakaoPayService {
     @Value("${kakao.pay.cid:test_cid}")
     private String cid;
 
+    @Value("${kakao.pay.subscription-cid:test_cid}")
+    private String subscriptionCid;
+
     @Value("${kakao.pay.api-url:https://test.kakao.com}")
     private String kakaoPayApiUrl;
 
@@ -56,7 +59,7 @@ public class KakaoPayService {
     public Map<String, Object> readyPayment(String partnerOrderId, String partnerUserId,
                                             String itemName, Integer quantity, Integer totalAmount,
                                             Integer taxFreeAmount) throws IOException {
-        Map<String, Object> requestBody = createReadyRequest(partnerOrderId, partnerUserId,
+        Map<String, Object> requestBody = createReadyRequest(cid, partnerOrderId, partnerUserId,
                 itemName, quantity, totalAmount, taxFreeAmount);
 
         String url = kakaoPayApiUrl + "/v1/payment/ready";
@@ -74,16 +77,17 @@ public class KakaoPayService {
      * 카카오페이 결제 승인
      */
     public Map<String, Object> approvePayment(String tid, String partnerOrderId,
-                                              String partnerUserId, String pgToken) throws IOException {
+                                              String partnerUserId, String pgToken, boolean autoRenew) throws IOException {
+        String cidToUse = autoRenew ? subscriptionCid : cid;
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("cid", cid);
+        requestBody.put("cid", cidToUse);
         requestBody.put("tid", tid);
         requestBody.put("partner_order_id", partnerOrderId);
         requestBody.put("partner_user_id", partnerUserId);
         requestBody.put("pg_token", pgToken);
 
         String url = kakaoPayApiUrl + "/v1/payment/approve";
-        log.info("Approving payment - tid: {}, partnerOrderId: {}", tid, partnerOrderId);
 
         Map<String, Object> response = makePostRequest(url, requestBody);
 
@@ -129,15 +133,15 @@ public class KakaoPayService {
     }
 
     /**
-     * 카카오페이 정기결제 준비
+     * 카카오페이 정기결제 준비 (1회차)
      */
     public Map<String, Object> readySubscription(String partnerOrderId, String partnerUserId,
                                                  String itemName, Integer quantity, Integer totalAmount,
                                                  Integer taxFreeAmount) throws IOException {
-        Map<String, Object> requestBody = createReadyRequest(partnerOrderId, partnerUserId,
+        Map<String, Object> requestBody = createReadyRequest(subscriptionCid, partnerOrderId, partnerUserId,
                 itemName, quantity, totalAmount, taxFreeAmount);
 
-        String url = kakaoPayApiUrl + "/v1/payment/subscription";
+        String url = kakaoPayApiUrl + "/v1/payment/ready";
         log.info("Ready subscription - partnerOrderId: {}, itemName: {}, totalAmount: {}",
                 partnerOrderId, itemName, totalAmount);
 
@@ -156,7 +160,7 @@ public class KakaoPayService {
                                                    Integer quantity, Integer totalAmount,
                                                    Integer taxFreeAmount) throws IOException {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("cid", cid);
+        requestBody.put("cid", subscriptionCid);
         requestBody.put("sid", sid);
         requestBody.put("partner_order_id", partnerOrderId);
         requestBody.put("partner_user_id", partnerUserId);
@@ -178,11 +182,11 @@ public class KakaoPayService {
     /**
      * 결제 준비 요청 바디 생성
      */
-    private Map<String, Object> createReadyRequest(String partnerOrderId, String partnerUserId,
+    private Map<String, Object> createReadyRequest(String cidToUse, String partnerOrderId, String partnerUserId,
                                                    String itemName, Integer quantity, Integer totalAmount,
                                                    Integer taxFreeAmount) {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("cid", cid);
+        requestBody.put("cid", cidToUse);
         requestBody.put("partner_order_id", partnerOrderId);
         requestBody.put("partner_user_id", partnerUserId);
         requestBody.put("item_name", itemName);

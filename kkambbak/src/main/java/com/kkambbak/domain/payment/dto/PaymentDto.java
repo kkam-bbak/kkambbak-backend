@@ -11,6 +11,14 @@ import lombok.Setter;
 public class PaymentDto {
 
     @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class CreateRequest {
+        @JsonProperty("auto_renew")
+        private Boolean autoRenew;  // null 또는 false: 단편결제, true: 정기결제
+    }
+
+    @Getter
     @Builder
     @AllArgsConstructor
     public static class CreateResponse {

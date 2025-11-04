@@ -22,21 +22,35 @@ public class PaymentFacade {
     private final SubscriptionService subscriptionService;
     private final PayHistoryRepository payHistoryRepository;
 
-    public PaymentDto.CreateResponse createPayment(Long userId, Long planId) {
-        log.info("Creating payment - userId: {}, planId: {}", userId, planId);
-        return paymentService.createPayment(userId, planId);
+    public PaymentDto.CreateResponse createPayment(Long userId, Long planId, PaymentDto.CreateRequest request) {
+        boolean autoRenew = request != null && Boolean.TRUE.equals(request.getAutoRenew());
+        log.info("Creating payment - userId: {}, planId: {}, autoRenew: {}", userId, planId, autoRenew);
+
+        return paymentService.createPayment(userId, planId, autoRenew);
     }
 
-    public void capturePayment(Long userId, Long paymentId, String orderId, String pgToken) {
-        paymentService.capturePayment(userId, paymentId, orderId, pgToken);
+    public void approvePayment(Long userId, Long paymentId, String orderId, String pgToken) {
+        PayHistory payHistory = payHistoryRepository.findById(paymentId)
+            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+
+        boolean autoRenew = Boolean.TRUE.equals(payHistory.getPaymentData().get("autoRenew"));
+        log.info("Approving payment - userId: {}, paymentId: {}, autoRenew: {}", userId, paymentId, autoRenew);
+
+        paymentService.approvePayment(userId, paymentId, orderId, pgToken, autoRenew);
 
         SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
         Subscription subscription = subscriptionService.createSubscription(userId, premiumPlan.getId());
 
-        PayHistory payHistory = payHistoryRepository.findById(paymentId)
+        PayHistory updatedPayHistory = payHistoryRepository.findById(paymentId)
             .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
 
-        payHistory.setSubscriptionId(subscription.getId());
-        payHistoryRepository.save(payHistory);
+        if (autoRenew) {
+            String billingKey = (String) updatedPayHistory.getPaymentData().get("sid");
+            subscription.setBillingKey(billingKey);
+            subscription.setAutoRenew(true);
+        }
+
+        updatedPayHistory.setSubscriptionId(subscription.getId());
+        payHistoryRepository.save(updatedPayHistory);
     }
 }

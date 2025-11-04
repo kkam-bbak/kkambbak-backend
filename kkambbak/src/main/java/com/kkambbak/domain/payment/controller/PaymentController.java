@@ -27,20 +27,21 @@ public class PaymentController {
     @PostMapping("/create/{planId}")
     public ApiResponse<PaymentDto.CreateResponse> createPayment(
         @AuthenticationPrincipal UserDetailsImpl userDetails,
-        @PathVariable Long planId
+        @PathVariable Long planId,
+        @RequestBody PaymentDto.CreateRequest autoRenew
     ) {
         Long userId = userDetails.getUserId();
-        PaymentDto.CreateResponse response = paymentFacade.createPayment(userId, planId);
+        PaymentDto.CreateResponse response = paymentFacade.createPayment(userId, planId, autoRenew);
         return ApiResponse.ok(response);
     }
 
-    @PostMapping("/capture")
-    public ApiResponse<Void> capturePayment(
+    @PostMapping("/approve")
+    public ApiResponse<Void> approvePayment(
         @AuthenticationPrincipal UserDetailsImpl userDetails,
         @RequestBody PaymentDto.CaptureRequest request
     ) {
         Long userId = userDetails.getUserId();
-        paymentFacade.capturePayment(userId, request.getPaymentId(), request.getOrderId(), request.getPgToken());
+        paymentFacade.approvePayment(userId, request.getPaymentId(), request.getOrderId(), request.getPgToken());
         return ApiResponse.ok();
     }
 

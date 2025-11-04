@@ -46,7 +46,7 @@ public class PaymentService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     
-    public PaymentDto.CreateResponse createPayment(Long userId, Long planId) {
+    public PaymentDto.CreateResponse createPayment(Long userId, Long planId, boolean autoRenew) {
         try {
             var pendingPayment = payHistoryRepository.findByUserIdAndStatusWithLock(userId, PaymentStatus.PENDING);
             if (pendingPayment.isPresent()) {
@@ -77,14 +77,27 @@ public class PaymentService {
             PayHistory savedPayHistory = payHistoryRepository.save(payHistory);
 
             String orderId = "order_" + savedPayHistory.getId() + "_" + System.currentTimeMillis();
-            Map<String, Object> readyResponse = kakaoPayService.readyPayment(
-                orderId,
-                userId.toString(),
-                plan.getName(),
-                1,
-                plan.getPrice().intValue(),
-                0
-            );
+
+            Map<String, Object> readyResponse;
+            if (autoRenew) {
+                readyResponse = kakaoPayService.readySubscription(
+                    orderId,
+                    userId.toString(),
+                    plan.getName(),
+                    1,
+                    plan.getPrice().intValue(),
+                    0
+                );
+            } else {
+                readyResponse = kakaoPayService.readyPayment(
+                    orderId,
+                    userId.toString(),
+                    plan.getName(),
+                    1,
+                    plan.getPrice().intValue(),
+                    0
+                );
+            }
 
             String tid = (String) readyResponse.get("tid");
             String approvalUrl = (String) readyResponse.get("next_redirect_pc_url");
@@ -92,6 +105,7 @@ public class PaymentService {
             Map<String, Object> paymentData = savedPayHistory.getPaymentData();
             paymentData.put("tid", tid);
             paymentData.put("orderId", orderId);
+            paymentData.put("autoRenew", autoRenew);
             payHistoryRepository.save(savedPayHistory);
 
             return PaymentDto.CreateResponse.builder()
@@ -101,12 +115,12 @@ public class PaymentService {
                 .build();
 
         } catch (IOException e) {
-            log.error("Failed to create payment - userId: {}, planId: {}", userId, planId, e);
+            log.error("Failed to create payment - userId: {}, planId: {}, autoRenew: {}", userId, planId, autoRenew, e);
             throw new PaymentCreationFailedException(e.getMessage());
         }
     }
-    
-    public void capturePayment(Long userId, Long paymentId, String orderId, String pgToken) {
+
+    public void approvePayment(Long userId, Long paymentId, String orderId, String pgToken, boolean autoRenew) {
         PayHistory payHistory = payHistoryRepository.findByIdWithLock(paymentId)
             .orElseThrow(PaymentNotFoundException::new);
 
@@ -126,19 +140,22 @@ public class PaymentService {
                 throw new InvalidPaymentStatusException("결제 데이터가 올바르지 않습니다.");
             }
 
-            Map<String, Object> approveResponse = kakaoPayService.approvePayment(tid, orderId, userId.toString(), pgToken);
+            Map<String, Object> approveResponse = kakaoPayService.approvePayment(tid, orderId, userId.toString(), pgToken, autoRenew);
 
-            Map<String, Object> updatePaymentData = new HashMap<>();
-            updatePaymentData.put("kakaoPayTid", tid);
-            updatePaymentData.put("kakaoPayOrderId", orderId);
-            updatePaymentData.put("kakaoPayStatus", approveResponse.get("status"));
+            paymentData.put("kakaoPayTid", tid);
+            paymentData.put("kakaoPayOrderId", orderId);
+            paymentData.put("kakaoPayStatus", approveResponse.get("status"));
 
-            // Facade에서 subscription ID를 전달받을 때까지는 null로 설정
-            payHistory.complete(orderId, updatePaymentData, null);
+            if (autoRenew) {
+                String sid = (String) approveResponse.get("sid");
+                paymentData.put("sid", sid);
+            }
+
+            payHistory.complete(orderId, paymentData, null);
             payHistoryRepository.save(payHistory);
 
         } catch (IOException e) {
-            log.error("Failed to capture payment - userId: {}, paymentId: {}, orderId: {}", userId, paymentId, orderId, e);
+            log.error("Failed to approve payment - userId: {}, paymentId: {}, orderId: {}, autoRenew: {}", userId, paymentId, orderId, autoRenew, e);
             throw new PaymentCaptureFailedException(e.getMessage());
         }
     }

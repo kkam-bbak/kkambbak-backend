@@ -47,12 +47,15 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
                 .orderId("order_1_1234567890")
                 .approvalUrl("https://open-api.kakaopay.com/online/web/next_redirect_pc_url")
                 .build();
-        given(paymentFacade.createPayment(anyLong(), anyLong())).willReturn(mockResponse);
+        given(paymentFacade.createPayment(anyLong(), anyLong(), any(PaymentDto.CreateRequest.class))).willReturn(mockResponse);
 
         // when & then
         this.mockMvc.perform(post("/api/v1/payments/create/{planId}", 1L)
                         .header("Authorization", "Bearer access_token_example")
-                        .contentType("application/json"))
+                        .contentType("application/json")
+                        .content(toJson(Map.of(
+                                "auto_renew", false
+                        ))))
                 .andExpect(status().isOk())
                 .andDo(document("payment-create",
                         resource(
@@ -65,6 +68,9 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
                                         )
                                         .pathParameters(
                                                 parameterWithName("planId").description("구독 플랜 ID")
+                                        )
+                                        .requestFields(
+                                                fieldWithPath("auto_renew").type(JsonFieldType.BOOLEAN).description("자동 갱신 여부 (true: 정기결제, false: 단편결제)")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
@@ -81,12 +87,12 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
     }
 
     @Test
-    void capturePaymentTest() throws Exception {
+    void approvePaymentTest() throws Exception {
         // given
-        doNothing().when(paymentFacade).capturePayment(anyLong(), anyLong(), any(String.class), any(String.class));
+        doNothing().when(paymentFacade).approvePayment(anyLong(), anyLong(), any(String.class), any(String.class));
 
         // when & then
-        this.mockMvc.perform(post("/api/v1/payments/capture")
+        this.mockMvc.perform(post("/api/v1/payments/approve")
                         .header("Authorization", "Bearer access_token_example")
                         .contentType("application/json")
                         .content(toJson(Map.of(
@@ -95,7 +101,7 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
                                 "pg_token", "05158049924b3495c98b"
                         ))))
                 .andExpect(status().isOk())
-                .andDo(document("payment-capture",
+                .andDo(document("payment-approve",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Payments")
