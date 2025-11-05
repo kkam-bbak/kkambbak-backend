@@ -5,6 +5,7 @@ import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.SubscriptionPlan;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.domain.payment.dto.PaymentDto;
+import com.kkambbak.domain.payment.exception.PaymentNotFoundException;
 import com.kkambbak.domain.payment.service.PaymentService;
 import com.kkambbak.domain.payment.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -29,28 +30,34 @@ public class PaymentFacade {
         return paymentService.createPayment(userId, planId, autoRenew);
     }
 
-    public void approvePayment(Long userId, Long paymentId, String orderId, String pgToken) {
-        PayHistory payHistory = payHistoryRepository.findById(paymentId)
-            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+    public String approvePayment(String orderId, String pgToken) {
+        try {
+            PayHistory payHistory = payHistoryRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new PaymentNotFoundException("Payment not found for orderId: " + orderId));
 
-        boolean autoRenew = Boolean.TRUE.equals(payHistory.getPaymentData().get("autoRenew"));
-        log.info("Approving payment - userId: {}, paymentId: {}, autoRenew: {}", userId, paymentId, autoRenew);
+            Long userId = payHistory.getUserId();
+            Long paymentId = payHistory.getId();
+            boolean autoRenew = Boolean.TRUE.equals(payHistory.getPaymentData().get("autoRenew"));
 
-        paymentService.approvePayment(userId, paymentId, orderId, pgToken, autoRenew);
+            paymentService.approvePayment(userId, paymentId, orderId, pgToken, autoRenew);
 
-        SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
-        Subscription subscription = subscriptionService.createSubscription(userId, premiumPlan.getId());
+            SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
+            Subscription subscription = subscriptionService.createSubscription(userId, premiumPlan.getId());
 
-        PayHistory updatedPayHistory = payHistoryRepository.findById(paymentId)
-            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+            if (autoRenew) {
+                String billingKey = (String) payHistory.getPaymentData().get("sid");
+                subscription.setBillingKey(billingKey);
+                subscription.setAutoRenew(true);
+            }
 
-        if (autoRenew) {
-            String billingKey = (String) updatedPayHistory.getPaymentData().get("sid");
-            subscription.setBillingKey(billingKey);
-            subscription.setAutoRenew(true);
+            payHistory.setSubscriptionId(subscription.getId());
+            payHistoryRepository.save(payHistory);
+
+            return paymentService.getApprovalSuccessUrl(orderId);
+
+        } catch (Exception e) {
+            log.error("Payment approval failed - orderId: {}, error: {}", orderId, e.getMessage());
+            return paymentService.getApprovalFailUrl();
         }
-
-        updatedPayHistory.setSubscriptionId(subscription.getId());
-        payHistoryRepository.save(updatedPayHistory);
     }
 }

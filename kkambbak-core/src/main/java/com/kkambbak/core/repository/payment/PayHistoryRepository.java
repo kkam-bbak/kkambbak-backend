@@ -16,6 +16,12 @@ import org.springframework.data.domain.Pageable;
 public interface PayHistoryRepository extends JpaRepository<PayHistory, Long> {
     Page<PayHistory> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    @Query(value = "SELECT p.id, p.user_id, p.subscription_id, p.payment_method, p.amount, p.status, " +
+                   "p.transaction_id, p.payment_data, p.paid_at, p.created_at, p.updated_at " +
+                   "FROM pay_history p WHERE p.payment_data->>'orderId' = :orderId",
+           nativeQuery = true)
+    Optional<PayHistory> findByOrderId(@Param("orderId") String orderId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM PayHistory p WHERE p.userId = :userId AND p.status = :status")
     Optional<PayHistory> findByUserIdAndStatusWithLock(@Param("userId") Long userId, @Param("status") PaymentStatus status);

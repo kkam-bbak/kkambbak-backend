@@ -8,7 +8,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Type;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,13 +36,12 @@ public class PayHistory extends BaseEntity {
     private PaymentMethod paymentMethod;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
 
-    @Column(length = 255)
     private String transactionId;
 
     @Type(JsonType.class)

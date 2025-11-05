@@ -14,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,6 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -89,36 +87,30 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
     @Test
     void approvePaymentTest() throws Exception {
         // given
-        doNothing().when(paymentFacade).approvePayment(anyLong(), anyLong(), any(String.class), any(String.class));
+        String redirectUrl = "http://localhost:3000/payment/success?orderId=order_1_1234567890";
+        given(paymentFacade.approvePayment(any(String.class), any(String.class))).willReturn(redirectUrl);
 
         // when & then
-        this.mockMvc.perform(post("/api/v1/payments/approve")
-                        .header("Authorization", "Bearer access_token_example")
-                        .contentType("application/json")
-                        .content(toJson(Map.of(
-                                "paymentId", 1L,
-                                "orderId", "order_1_1234567890",
-                                "pg_token", "05158049924b3495c98b"
-                        ))))
+        this.mockMvc.perform(get("/api/v1/payments/approve")
+                        .param("orderId", "order_1_1234567890")
+                        .param("pg_token", "05158049924b3495c98b")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("payment-approve",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Payments")
                                         .summary("결제 승인")
-                                        .description("카카오페이에서 사용자 승인 후 받은 (리다이액트 url에 포함되어있음) pg_token, 결제 생성 때 응답에 나온 정보들로 결제를 승인하고 구독을 생성합니다.")
-                                        .requestHeaders(
-                                                headerWithName("Authorization").description("Bearer 토큰")
-                                        )
-                                        .requestFields(
-                                                fieldWithPath("paymentId").type(JsonFieldType.NUMBER).description("결제 기록 ID"),
-                                                fieldWithPath("orderId").type(JsonFieldType.STRING).description("주문 ID"),
-                                                fieldWithPath("pg_token").type(JsonFieldType.STRING).description("카카오페이 승인 토큰 (리다이렉트 URL의 pg_token 파라미터)")
+                                        .description("카카오페이에서 사용자 승인 후 받은 pg_token과 orderId로 결제를 승인하고 구독을 생성합니다. 결제 성공/실패 리다이액트 응답에 포함되어 있어 해당 url로 리다이액트 진행해하면 됨.")
+                                        .queryParameters(
+                                                parameterWithName("orderId").description("주문 ID (결제 생성 시 발급)"),
+                                                parameterWithName("pg_token").description("카카오페이 승인 토큰")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
-                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional()
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.STRING).description("리다이렉트 URL (프론트에서 처리)")
                                         )
                                         .build()
                         )
@@ -134,7 +126,7 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
                 .userName("John Doe")
                 .userEmail("john@example.com")
                 .planName("Premium Plan")
-                .amount(new BigDecimal("9900"))
+                .amount(9900L)
                 .status("COMPLETED")
                 .createdAt(now)
                 .paidAt(now)
@@ -189,7 +181,7 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
                         .userName("John Doe")
                         .userEmail("john@example.com")
                         .planName("Premium Plan")
-                        .amount(new BigDecimal("9900"))
+                        .amount(9900L)
                         .status("COMPLETED")
                         .createdAt(now)
                         .paidAt(now)

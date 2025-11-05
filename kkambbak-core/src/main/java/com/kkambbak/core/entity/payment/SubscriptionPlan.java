@@ -4,8 +4,6 @@ import com.kkambbak.core.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 
 @Entity
 @Table(name = "subscription_plans")
@@ -23,7 +21,7 @@ public class SubscriptionPlan extends BaseEntity {
     private String name;
 
     @Column(nullable = false)
-    private BigDecimal price;
+    private Long price;
 
     @Column(nullable = false)
     private Integer durationDays;

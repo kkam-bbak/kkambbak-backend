@@ -160,6 +160,14 @@ public class PaymentService {
         }
     }
 
+    public String getApprovalSuccessUrl(String orderId) {
+        return kakaoPayService.getSuccessUrl() + "?orderId=" + orderId;
+    }
+
+    public String getApprovalFailUrl() {
+        return kakaoPayService.getFailUrl();
+    }
+
     @Transactional(readOnly = true)
     public PaymentDetailDto getPaymentDetail(Long userId, Long paymentId) {
         PayHistory payHistory = payHistoryRepository.findById(paymentId)

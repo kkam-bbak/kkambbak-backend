@@ -35,14 +35,14 @@ public class PaymentController {
         return ApiResponse.ok(response);
     }
 
-    @PostMapping("/approve")
-    public ApiResponse<Void> approvePayment(
-        @AuthenticationPrincipal UserDetailsImpl userDetails,
-        @RequestBody PaymentDto.CaptureRequest request
+    @GetMapping("/approve")
+    public ApiResponse<String> approvePayment(
+        @RequestParam String pg_token,
+        @RequestParam String orderId
     ) {
-        Long userId = userDetails.getUserId();
-        paymentFacade.approvePayment(userId, request.getPaymentId(), request.getOrderId(), request.getPgToken());
-        return ApiResponse.ok();
+        log.info("Payment approval request - orderId: {}, pg_token: {}", orderId, pg_token);
+        String redirectUrl = paymentFacade.approvePayment(orderId, pg_token);
+        return ApiResponse.ok(redirectUrl);
     }
 
     @GetMapping("/{paymentId}")

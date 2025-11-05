@@ -2,6 +2,7 @@ package com.kkambbak.client.payment.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,12 +45,18 @@ public class KakaoPayService {
     @Value("${kakao.pay.api-url:https://test.kakao.com}")
     private String kakaoPayApiUrl;
 
-    @Value("${kakao.pay.callback.approval-url:http://localhost:3000/payment/success}")
+    @Value("${kakao.pay.callback.approval-url:http://localhost:8080/api/v1/payments/approve}")
     private String approvalUrl;
 
+    @Getter
+    @Value("${kakao.pay.callback.success-url:http://localhost:3000/payment/success}")
+    private String successUrl;
+
+    @Getter
     @Value("${kakao.pay.callback.cancel-url:http://localhost:3000/payment/fail}")
     private String cancelUrl;
 
+    @Getter
     @Value("${kakao.pay.callback.fail-url:http://localhost:3000/payment/fail}")
     private String failUrl;
 
@@ -193,7 +200,7 @@ public class KakaoPayService {
         requestBody.put("quantity", quantity);
         requestBody.put("total_amount", totalAmount);
         requestBody.put("tax_free_amount", taxFreeAmount);
-        requestBody.put("approval_url", this.approvalUrl);
+        requestBody.put("approval_url", this.approvalUrl + "?orderId=" + partnerOrderId);
         requestBody.put("cancel_url", this.cancelUrl);
         requestBody.put("fail_url", this.failUrl);
         return requestBody;
