@@ -9,6 +9,7 @@ import com.kkambbak.domain.payment.dto.PaymentDto;
 import com.kkambbak.domain.payment.exception.PaymentNotFoundException;
 import com.kkambbak.domain.payment.service.PaymentService;
 import com.kkambbak.domain.payment.service.SubscriptionService;
+import com.kkambbak.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class PaymentFacade {
     private final SubscriptionService subscriptionService;
     private final PayHistoryRepository payHistoryRepository;
     private final DiscordClient discordClient;
+    private final UserService userService;
 
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, PaymentDto.CreateRequest request) {
         boolean autoRenew = request != null && Boolean.TRUE.equals(request.getAutoRenew());
@@ -54,6 +56,8 @@ public class PaymentFacade {
 
             payHistory.setSubscriptionId(subscription.getId());
             payHistoryRepository.save(payHistory);
+
+            userService.upgradeRole(userId);
 
             discordClient.sendPaymentSuccess(
                 userId,

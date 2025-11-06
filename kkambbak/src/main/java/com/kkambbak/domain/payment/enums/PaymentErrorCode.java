@@ -17,7 +17,9 @@ public enum PaymentErrorCode implements ResponseCode {
     ALREADY_SUBSCRIBED("PA007", "Already subscribed"),
     PAYMENT_PENDING("PA008", "Payment is pending"),
     SUBSCRIPTION_NOT_FOUND("PA009", "Subscription not found"),
-    INVALID_PAGE_REQUEST("PA010", "Invalid page request");
+    INVALID_PAGE_REQUEST("PA010", "Invalid page request"),
+    SUBSCRIPTION_ALREADY_CANCELLED("PA011", "Subscription already cancelled"),
+    SUBSCRIPTION_ALREADY_EXPIRED("PA012", "Subscription already expired");
 
     private final String statusCode;
     private final String message;

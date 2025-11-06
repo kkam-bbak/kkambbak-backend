@@ -9,6 +9,7 @@ import com.kkambbak.core.entity.payment.enums.PaymentStatus;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
+import com.kkambbak.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class SubscriptionBatchService {
     private final PayHistoryRepository payHistoryRepository;
     private final KakaoPayService kakaoPayService;
     private final DiscordClient discordClient;
+    private final UserService userService;
 
     /**
      * 내일 갱신 대상 조회 (전날 오후 12시에 처리하기 위해 내일 날짜로 조회)
@@ -163,5 +165,61 @@ public class SubscriptionBatchService {
 
     private String generateOrderId(Subscription subscription) {
         return "renewal_" + subscription.getId() + "_" + System.currentTimeMillis();
+    }
+
+    /**
+     * 만료된 구독 조회 (endDate < 현재시간)
+     */
+    public List<Subscription> getExpiredTargets() {
+        List<Subscription> activeExpired = subscriptionRepository.findExpiredSubscriptions(
+                LocalDateTime.now(),
+                SubscriptionStatus.ACTIVE
+        );
+        List<Subscription> cancelledExpired = subscriptionRepository.findExpiredSubscriptions(
+                LocalDateTime.now(),
+                SubscriptionStatus.CANCELLED
+        );
+
+        activeExpired.addAll(cancelledExpired);
+        return activeExpired;
+    }
+
+    /**
+     * 만료된 구독 일괄 처리
+     */
+    @Transactional
+    public void processAllExpiries(List<Subscription> subscriptions) {
+        for (Subscription subscription : subscriptions) {
+            try {
+                processSubscriptionExpiry(subscription);
+            } catch (Exception e) {
+                log.error("[SubscriptionExpiry] Failed to process subscription expiry - " +
+                        "subscriptionId: {}, userId: {}, error: {}",
+                        subscription.getId(), subscription.getUserId(), e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * 개별 구독 만료 처리
+     */
+    @Transactional
+    public void processSubscriptionExpiry(Subscription subscription) {
+        try {
+            log.info("[SubscriptionExpiry] Processing expiry - subscriptionId: {}, userId: {}, status: {}, endDate: {}",
+                    subscription.getId(), subscription.getUserId(), subscription.getStatus(), subscription.getEndDate());
+
+            subscription.expire();
+            subscriptionRepository.save(subscription);
+
+            userService.downgradeRole(subscription.getUserId());
+
+            log.info("[SubscriptionExpiry] Subscription expired - subscriptionId: {}, userId: {}, expiredAt: {}",
+                    subscription.getId(), subscription.getUserId(), subscription.getExpiredAt());
+
+        } catch (Exception e) {
+            log.error("[SubscriptionExpiry] Failed to process subscription expiry - subscriptionId: {}",
+                    subscription.getId(), e);
+        }
     }
 }

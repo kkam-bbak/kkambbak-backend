@@ -227,6 +227,19 @@ public class KakaoPayService {
     }
 
     /**
+     * 정기결제 비활성화 (구독 취소)
+     */
+    public void inactiveSubscription(String sid) throws IOException {
+        String url = kakaoPayApiUrl + "/online/v1/payment/manage/subscription/inactive";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("cid", subscriptionCid);
+        params.put("sid", sid);
+
+        makePostRequest(url, params);
+    }
+
+    /**
      * KakaoPay 에러 응답에서 상세 메시지 추출
      */
     private String extractKakaoPayErrorMessage(Exception e) {

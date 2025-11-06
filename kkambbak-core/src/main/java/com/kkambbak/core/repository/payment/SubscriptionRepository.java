@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
     Optional<Subscription> findByUserIdAndStatus(Long userId, SubscriptionStatus status);
-    
+
     @Query("SELECT s FROM Subscription s " +
            "WHERE CAST(s.endDate AS DATE) = CAST(:targetDate AS DATE) " +
            "AND s.status = :status " +
@@ -21,4 +21,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     List<Subscription> findDueForRenewal(@Param("targetDate") LocalDateTime targetDate,
                                           @Param("status") SubscriptionStatus status);
 
+    @Query("SELECT s FROM Subscription s " +
+           "WHERE s.endDate < :now " +
+           "AND s.status = :status")
+    List<Subscription> findExpiredSubscriptions(@Param("now") LocalDateTime now,
+                                                @Param("status") SubscriptionStatus status);
 }

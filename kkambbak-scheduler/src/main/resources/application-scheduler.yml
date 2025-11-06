@@ -4,3 +4,6 @@ cron:
 
   # 정기결제 자동 갱신 작업 (매일 정오 실행)
   subscription-job: 0 0 12 * * *
+
+  # 구독 만료 처리 작업 (매일 자정 실행)
+  subscription-expiry-job: 0 0 0 * * *

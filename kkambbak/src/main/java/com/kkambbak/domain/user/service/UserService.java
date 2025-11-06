@@ -4,6 +4,7 @@ import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
 import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.core.entity.user.enums.UserStatus;
+import com.kkambbak.core.entity.user.enums.UserRole;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
@@ -237,6 +238,28 @@ public class UserService {
             } else {
                 log.warn("No authorization header found for logout - userId: {}", userId);
             }
+        }
+    }
+
+    @Transactional
+    public void upgradeRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != UserRole.PREMIUM) {
+            user.setRole(UserRole.PREMIUM);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional
+    public void downgradeRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != UserRole.STANDARD) {
+            user.setRole(UserRole.STANDARD);
+            userRepository.save(user);
         }
     }
 
