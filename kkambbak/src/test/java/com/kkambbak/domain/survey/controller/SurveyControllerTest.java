@@ -2,7 +2,7 @@ package com.kkambbak.domain.survey.controller;
 
 import com.kkambbak.KkambbakDocumentApiTester;
 import com.kkambbak.domain.survey.dto.SurveyDto;
-import com.kkambbak.domain.survey.enums.DifficultyLevel;
+import com.kkambbak.core.entity.survey.enums.DifficultyLevel;
 import com.kkambbak.domain.survey.service.SurveyService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

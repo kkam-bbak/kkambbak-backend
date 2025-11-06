@@ -38,7 +38,7 @@ public class SurveyService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        // 3중복 방지
+        // 중복 방지
         if (surveyRepository.existsByUser_Id(user.getId())) {
             throw new SurveyAlreadyExistsException();
         }
