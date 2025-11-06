@@ -16,6 +16,7 @@ import java.util.Map;
 @Entity
 @Table(name = "pay_history")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
@@ -62,9 +63,5 @@ public class PayHistory extends BaseEntity {
 
     public void fail() {
         this.status = PaymentStatus.FAILED;
-    }
-
-    public void setSubscriptionId(Long subscriptionId) {
-        this.subscriptionId = subscriptionId;
     }
 }

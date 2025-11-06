@@ -47,37 +47,37 @@ public class PaymentService {
     private final UserRepository userRepository;
     
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, boolean autoRenew) {
+        var pendingPayment = payHistoryRepository.findByUserIdAndStatusWithLock(userId, PaymentStatus.PENDING);
+        if (pendingPayment.isPresent()) {
+            throw new PaymentPendingException("진행 중인 결제가 있습니다. 진행 중인 결제를 완료해주세요.");
+        }
+
+        var activeSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
+        if (activeSubscription.isPresent()) {
+            Subscription subscription = activeSubscription.get();
+            long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(
+                LocalDateTime.now(),
+                subscription.getEndDate()
+            );
+            String message = String.format("이미 구독 중입니다. 남은 날짜: %d일", daysRemaining);
+            throw new AlreadySubscribedException(message);
+        }
+
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
+            .orElseThrow(PlanNotFoundException::new);
+
+        PayHistory payHistory = PayHistory.builder()
+            .userId(userId)
+            .paymentMethod(PaymentMethod.KAKAO)
+            .amount(plan.getPrice())
+            .status(PaymentStatus.PENDING)
+            .paymentData(new HashMap<>())
+            .build();
+        PayHistory savedPayHistory = payHistoryRepository.save(payHistory);
+
+        String orderId = "order_" + savedPayHistory.getId() + "_" + System.currentTimeMillis();
+
         try {
-            var pendingPayment = payHistoryRepository.findByUserIdAndStatusWithLock(userId, PaymentStatus.PENDING);
-            if (pendingPayment.isPresent()) {
-                throw new PaymentPendingException("진행 중인 결제가 있습니다. 진행 중인 결제를 완료해주세요.");
-            }
-
-            var activeSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
-            if (activeSubscription.isPresent()) {
-                Subscription subscription = activeSubscription.get();
-                long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(
-                    LocalDateTime.now(),
-                    subscription.getEndDate()
-                );
-                String message = String.format("이미 구독 중입니다. 남은 날짜: %d일", daysRemaining);
-                throw new AlreadySubscribedException(message);
-            }
-
-            SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
-                .orElseThrow(PlanNotFoundException::new);
-
-            PayHistory payHistory = PayHistory.builder()
-                .userId(userId)
-                .paymentMethod(PaymentMethod.KAKAO)
-                .amount(plan.getPrice())
-                .status(PaymentStatus.PENDING)
-                .paymentData(new HashMap<>())
-                .build();
-            PayHistory savedPayHistory = payHistoryRepository.save(payHistory);
-
-            String orderId = "order_" + savedPayHistory.getId() + "_" + System.currentTimeMillis();
-
             Map<String, Object> readyResponse;
             if (autoRenew) {
                 readyResponse = kakaoPayService.readySubscription(
@@ -115,7 +115,11 @@ public class PaymentService {
                 .build();
 
         } catch (IOException e) {
-            log.error("Failed to create payment - userId: {}, planId: {}, autoRenew: {}", userId, planId, autoRenew, e);
+            log.error("Failed to create payment - userId: {}, planId: {}, orderId: {}, autoRenew: {}", userId, planId, orderId, autoRenew, e);
+
+            savedPayHistory.fail();
+            payHistoryRepository.save(savedPayHistory);
+
             throw new PaymentCreationFailedException(e.getMessage());
         }
     }
@@ -156,6 +160,10 @@ public class PaymentService {
 
         } catch (IOException e) {
             log.error("Failed to approve payment - userId: {}, paymentId: {}, orderId: {}, autoRenew: {}", userId, paymentId, orderId, autoRenew, e);
+
+            payHistory.fail();
+            payHistoryRepository.save(payHistory);
+
             throw new PaymentCaptureFailedException(e.getMessage());
         }
     }

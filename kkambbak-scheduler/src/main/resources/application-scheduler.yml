@@ -1,3 +1,6 @@
 cron:
   # OTP 만료 작업 (5분마다 실행)
   otp-expire-job: 0 */5 * * * *
+
+  # 정기결제 자동 갱신 작업 (매일 정오 실행)
+  subscription-job: 0 0 12 * * *

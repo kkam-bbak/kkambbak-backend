@@ -34,6 +34,9 @@ discord:
   scheduler:
     webhook:
       url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}
+  payment:
+    webhook:
+      url: ${DISCORD_PAYMENT_WEBHOOK_URL:}
 
 kakao:
   pay:
