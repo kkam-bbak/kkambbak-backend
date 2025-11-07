@@ -1,12 +1,14 @@
 package com.kkambbak.scheduler.domain.payment.service;
 
 import com.kkambbak.client.discord.DiscordClient;
+import com.kkambbak.client.mail.service.MailSender;
 import com.kkambbak.client.payment.service.KakaoPayService;
 import com.kkambbak.core.entity.payment.PayHistory;
 import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.enums.PaymentMethod;
 import com.kkambbak.core.entity.payment.enums.PaymentStatus;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
+import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
 import com.kkambbak.domain.user.service.UserService;
@@ -30,6 +32,7 @@ public class SubscriptionBatchService {
     private final KakaoPayService kakaoPayService;
     private final DiscordClient discordClient;
     private final UserService userService;
+    private final MailSender mailSender;
 
     /**
      * 내일 갱신 대상 조회 (전날 오후 12시에 처리하기 위해 내일 날짜로 조회)
@@ -104,6 +107,22 @@ public class SubscriptionBatchService {
             LocalDateTime newEndDate = subscription.getEndDate().plusMonths(1);
             subscription.setEndDate(newEndDate);
             subscriptionRepository.save(subscription);
+
+            try {
+                User user = userService.getUser(subscription.getUserId());
+                mailSender.sendPaymentSuccessEmail(
+                        user.getEmail(),
+                        user.getName(),
+                        newEndDate,
+                        subscription.getPlan().getPrice(),
+                        PaymentMethod.KAKAO.getDescription(),
+                        subscription.getPlan().getName()
+                );
+            } catch (Exception emailError) {
+                log.warn("[SubscriptionRenewal] Failed to send email success notification - subscriptionId: {}",
+                        subscription.getId(), emailError);
+            }
+
             try {
                 discordClient.sendSubscriptionRenewalSuccess(
                         subscription.getUserId(),
@@ -144,6 +163,22 @@ public class SubscriptionBatchService {
                     .build();
 
             payHistoryRepository.save(payHistory);
+
+            try {
+                User user = userService.getUser(subscription.getUserId());
+                mailSender.sendPaymentFailureEmail(
+                        user.getEmail(),
+                        user.getName(),
+                        LocalDateTime.now(),
+                        subscription.getPlan().getPrice(),
+                        PaymentMethod.KAKAO.getDescription(),
+                        subscription.getPlan().getName(),
+                        exception.getMessage()
+                );
+            } catch (Exception emailError) {
+                log.warn("[SubscriptionRenewal] Failed to send email failure notification - subscriptionId: {}",
+                        subscription.getId(), emailError);
+            }
 
             try {
                 discordClient.sendSubscriptionRenewalFailure(

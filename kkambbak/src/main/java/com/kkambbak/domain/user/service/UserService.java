@@ -263,6 +263,12 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
     private void validateAuthKey(String key) {
         if (!authKey.equals(key)) {
             log.warn("Invalid authentication key attempt");

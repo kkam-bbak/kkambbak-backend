@@ -7,3 +7,6 @@ cron:
 
   # 구독 만료 처리 작업 (매일 자정 실행)
   subscription-expiry-job: 0 0 0 * * *
+
+  # 구독 종료 예정 알림 (매일 오전 10시 실행)
+  subscription-expiry-reminder-job: 0 0 10 * * *

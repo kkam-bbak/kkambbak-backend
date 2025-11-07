@@ -1,9 +1,11 @@
 package com.kkambbak.domain.payment.facade;
 
 import com.kkambbak.client.discord.DiscordClient;
+import com.kkambbak.client.mail.service.MailSender;
 import com.kkambbak.core.entity.payment.PayHistory;
 import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.SubscriptionPlan;
+import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.domain.payment.dto.PaymentDto;
 import com.kkambbak.domain.payment.exception.PaymentNotFoundException;
@@ -14,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -26,6 +30,7 @@ public class PaymentFacade {
     private final PayHistoryRepository payHistoryRepository;
     private final DiscordClient discordClient;
     private final UserService userService;
+    private final MailSender mailSender;
 
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, PaymentDto.CreateRequest request) {
         boolean autoRenew = request != null && Boolean.TRUE.equals(request.getAutoRenew());
@@ -59,6 +64,20 @@ public class PaymentFacade {
 
             userService.upgradeRole(userId);
 
+            try {
+                User user = userService.getUser(userId);
+                mailSender.sendPaymentSuccessEmail(
+                    user.getEmail(),
+                    user.getName(),
+                    subscription.getEndDate(),
+                    payHistory.getAmount(),
+                    payHistory.getPaymentMethod().getDescription(),
+                    premiumPlan.getName()
+                );
+            } catch (Exception emailError) {
+                log.warn("Failed to send email notification", emailError);
+            }
+
             discordClient.sendPaymentSuccess(
                 userId,
                 paymentId,
@@ -77,6 +96,22 @@ public class PaymentFacade {
                     .orElse(null);
                 if (payHistory != null) {
                     SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
+
+                    try {
+                        User user = userService.getUser(payHistory.getUserId());
+                        mailSender.sendPaymentFailureEmail(
+                            user.getEmail(),
+                            user.getName(),
+                            LocalDateTime.now(),
+                            payHistory.getAmount(),
+                            payHistory.getPaymentMethod().getDescription(),
+                            premiumPlan.getName(),
+                            e.getMessage()
+                        );
+                    } catch (Exception emailError) {
+                        log.warn("Failed to send payment failure email", emailError);
+                    }
+
                     discordClient.sendPaymentFailure(
                         payHistory.getUserId(),
                         payHistory.getId(),

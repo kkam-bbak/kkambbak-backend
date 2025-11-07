@@ -1,9 +1,11 @@
 package com.kkambbak.domain.payment.service;
 
+import com.kkambbak.client.mail.service.MailSender;
 import com.kkambbak.client.payment.service.KakaoPayService;
 import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.SubscriptionPlan;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
+import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.SubscriptionPlanRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
 import com.kkambbak.domain.payment.dto.SubscriptionDto;
@@ -31,6 +33,7 @@ public class SubscriptionService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final KakaoPayService kakaoPayService;
     private final UserService userService;
+    private final MailSender mailSender;
 
     /**
      * 구독 생성
@@ -125,6 +128,19 @@ public class SubscriptionService {
 
         subscription.cancel();
         subscriptionRepository.save(subscription);
+
+        try {
+            User user = userService.getUser(userId);
+            mailSender.sendSubscriptionCancelledEmail(
+                user.getEmail(),
+                user.getName(),
+                LocalDateTime.now(),
+                subscription.getEndDate(),
+                subscription.getPlan().getName()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send subscription cancelled email", e);
+        }
     }
     
     /**

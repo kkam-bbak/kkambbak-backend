@@ -26,4 +26,11 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
            "AND s.status = :status")
     List<Subscription> findExpiredSubscriptions(@Param("now") LocalDateTime now,
                                                 @Param("status") SubscriptionStatus status);
+
+    @Query("SELECT s FROM Subscription s " +
+           "WHERE CAST(s.endDate AS DATE) = CAST(:targetDate AS DATE) " +
+           "AND s.status = :status " +
+           "AND s.autoRenew = true")
+    List<Subscription> findSubscriptionsExpiringOn(@Param("targetDate") LocalDateTime targetDate,
+                                                   @Param("status") SubscriptionStatus status);
 }
