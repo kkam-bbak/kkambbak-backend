@@ -6,8 +6,10 @@ import com.kkambbak.core.entity.payment.PayHistory;
 import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.SubscriptionPlan;
 import com.kkambbak.core.entity.user.User;
+import com.kkambbak.core.entity.user.enums.AuthProvider;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.domain.payment.dto.PaymentDto;
+import com.kkambbak.domain.payment.exception.GuestUserCannotPayException;
 import com.kkambbak.domain.payment.exception.PaymentNotFoundException;
 import com.kkambbak.domain.payment.service.PaymentService;
 import com.kkambbak.domain.payment.service.SubscriptionService;
@@ -33,6 +35,11 @@ public class PaymentFacade {
     private final MailSender mailSender;
 
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, PaymentDto.CreateRequest request) {
+        User user = userService.getUser(userId);
+        if (user.getProvider() == AuthProvider.GUEST) {
+            throw new GuestUserCannotPayException();
+        }
+
         boolean autoRenew = request != null && Boolean.TRUE.equals(request.getAutoRenew());
         log.info("Creating payment - userId: {}, planId: {}, autoRenew: {}", userId, planId, autoRenew);
 

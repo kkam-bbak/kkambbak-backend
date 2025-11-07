@@ -19,10 +19,13 @@ public class SubscriptionJob {
     private final SubscriptionBatchService subscriptionRenewalBatchService;
     private final DiscordClient discordClient;
 
+    /**
+     * 정기 결제 갱신 (전날 12시 실행)
+     */
     @Scheduled(cron = "${cron.subscription-job:0 0 12 * * *}")
     public void executeSubscriptionRenewal() {
         long startTime = System.currentTimeMillis();
-        log.info("[SubscriptionJob] Starting subscription renewal batch job at {}",
+        log.info("[SubscriptionRenewalJob] Starting subscription renewal batch job at {}",
                 LocalDateTime.now());
 
         try {
@@ -39,9 +42,37 @@ public class SubscriptionJob {
             discordClient.sendSchedulerSuccess("SubscriptionRenewalJob", executionTimeSeconds);
 
         } catch (Exception e) {
-            log.error("[SubscriptionJob] Subscription renewal batch job failed with error: {}",
+            log.error("[SubscriptionRenewalJob] Subscription renewal batch job failed with error: {}",
                     e.getMessage(), e);
             discordClient.sendSchedulerError("SubscriptionRenewalJob", e);
+        }
+    }
+
+    /**
+     * 정기 결제 재시도 실패 한것들만 (당일 정오 실행)
+     */
+    @Scheduled(cron = "${cron.subscription-job:0 0 12 * * *}")
+    public void executeSubscriptionRetry() {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            List<Subscription> retryTargets = subscriptionRenewalBatchService.getRetryTargets();
+
+            if (retryTargets.isEmpty()) {
+                double executionTimeSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
+                discordClient.sendSchedulerSuccess("SubscriptionRetryJob", executionTimeSeconds);
+                return;
+            }
+
+            log.info("[SubscriptionRetryJob] Found {} subscriptions to retry (failed yesterday)", retryTargets.size());
+            subscriptionRenewalBatchService.processAllRenewals(retryTargets);
+            double executionTimeSeconds = (System.currentTimeMillis() - startTime) / 1000.0;
+            discordClient.sendSchedulerSuccess("SubscriptionRetryJob", executionTimeSeconds);
+
+        } catch (Exception e) {
+            log.error("[SubscriptionRetryJob] Subscription retry job failed with error: {}",
+                    e.getMessage(), e);
+            discordClient.sendSchedulerError("SubscriptionRetryJob", e);
         }
     }
 }

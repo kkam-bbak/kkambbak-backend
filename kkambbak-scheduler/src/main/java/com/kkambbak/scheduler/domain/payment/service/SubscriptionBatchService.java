@@ -44,6 +44,16 @@ public class SubscriptionBatchService {
         );
     }
 
+    /**
+     * 오늘 만료 대상 재시도 조회 (만료 당일 자정 실행)
+     */
+    public List<Subscription> getRetryTargets() {
+        return subscriptionRepository.findDueForRenewal(
+                LocalDateTime.now(),
+                SubscriptionStatus.ACTIVE
+        );
+    }
+
     @Transactional
     public void processAllRenewals(List<Subscription> subscriptions) {
         for (Subscription subscription : subscriptions) {
