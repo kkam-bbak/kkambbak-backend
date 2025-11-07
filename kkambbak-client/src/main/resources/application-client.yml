@@ -34,3 +34,20 @@ discord:
   scheduler:
     webhook:
       url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}
+  payment:
+    webhook:
+      url: ${DISCORD_PAYMENT_WEBHOOK_URL:}
+
+kakao:
+  pay:
+    client-id: ${KAKAO_PAY_CLIENT_ID:test_client_id}
+    client-secret: ${KAKAO_PAY_CLIENT_SECRET:test_client_secret}
+    secret-key: ${KAKAO_PAY_SECRET_KEY:test_secret_key}
+    cid: ${KAKAO_PAY_CID:TC0ONETIME}
+    subscription-cid: ${KAKAO_PAY_SUBSCRIPTION_CID:TCSUBSCRIP}
+    api-url: ${KAKAO_PAY_API_URL:https://test.kakao.com}
+    callback:
+      approval-url: ${KAKAO_PAY_APPROVAL_URL:http://localhost:8080/api/v1/payments/approve}
+      success-url: ${KAKAO_PAY_SUCCESS_URL:http://localhost:3000/payment/success}
+      cancel-url: ${KAKAO_PAY_CANCEL_URL:http://localhost:3000/payment/fail}
+      fail-url: ${KAKAO_PAY_FAIL_URL:http://localhost:3000/payment/fail}

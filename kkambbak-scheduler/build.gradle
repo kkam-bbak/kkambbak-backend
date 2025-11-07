@@ -1,6 +1,7 @@
 dependencies {
 	implementation project(':kkambbak-core')
 	implementation project(':kkambbak-client')
+	implementation project(':kkambbak')
 }
 
 bootJar {
