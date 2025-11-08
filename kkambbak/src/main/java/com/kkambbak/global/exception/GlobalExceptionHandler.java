@@ -1,5 +1,6 @@
 package com.kkambbak.global.exception;
 
+import com.kkambbak.client.exception.ClientException;
 import com.kkambbak.global.code.ResponseCode;
 import com.kkambbak.global.code.CommonResponseCode;
 import com.kkambbak.global.response.ApiResponse;
@@ -80,6 +81,23 @@ public class GlobalExceptionHandler {
 
         // 그 외 무결성 제약 위반
         return ApiResponse.error(CommonResponseCode.BAD_REQUEST_ERROR, "데이터 무결성 예외가 발생했습니다.");
+    }
+
+    @ExceptionHandler(ClientException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Object> handleClientException(ClientException e) {
+        ResponseCode clientResponseCode = new ResponseCode() {
+            @Override
+            public String getStatusCode() {
+                return e.getCode();
+            }
+
+            @Override
+            public String getMessage() {
+                return e.getMessage();
+            }
+        };
+        return ApiResponse.error(clientResponseCode, e.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

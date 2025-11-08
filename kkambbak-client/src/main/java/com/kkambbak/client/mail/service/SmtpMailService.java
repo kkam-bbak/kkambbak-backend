@@ -16,12 +16,15 @@ public class SmtpMailService implements MailSender {
 
     private final JavaMailSender javaMailSender;
     private final MailTemplate mailTemplate;
+    private final EmailRateLimiter emailRateLimiter;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
     @Override
     public void sendOtpEmail(String toEmail, String otpCode) {
+        emailRateLimiter.checkAndIncrementEmailCount(toEmail);
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
