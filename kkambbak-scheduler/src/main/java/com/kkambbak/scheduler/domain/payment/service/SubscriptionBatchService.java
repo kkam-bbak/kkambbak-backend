@@ -11,7 +11,7 @@ import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
-import com.kkambbak.domain.user.service.UserService;
+import com.kkambbak.core.service.UserRoleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ public class SubscriptionBatchService {
     private final PayHistoryRepository payHistoryRepository;
     private final KakaoPayService kakaoPayService;
     private final DiscordClient discordClient;
-    private final UserService userService;
+    private final UserRoleService userRoleService;
     private final MailSender mailSender;
 
     /**
@@ -119,7 +119,7 @@ public class SubscriptionBatchService {
             subscriptionRepository.save(subscription);
 
             try {
-                User user = userService.getUser(subscription.getUserId());
+                User user = userRoleService.getUser(subscription.getUserId());
                 mailSender.sendPaymentSuccessEmail(
                         user.getEmail(),
                         user.getName(),
@@ -175,7 +175,7 @@ public class SubscriptionBatchService {
             payHistoryRepository.save(payHistory);
 
             try {
-                User user = userService.getUser(subscription.getUserId());
+                User user = userRoleService.getUser(subscription.getUserId());
                 mailSender.sendPaymentFailureEmail(
                         user.getEmail(),
                         user.getName(),
@@ -257,7 +257,7 @@ public class SubscriptionBatchService {
             subscription.expire();
             subscriptionRepository.save(subscription);
 
-            userService.downgradeRole(subscription.getUserId());
+            userRoleService.downgradeRole(subscription.getUserId());
 
             log.info("[SubscriptionExpiry] Subscription expired - subscriptionId: {}, userId: {}, expiredAt: {}",
                     subscription.getId(), subscription.getUserId(), subscription.getExpiredAt());

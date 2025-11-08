@@ -241,33 +241,6 @@ public class UserService {
         }
     }
 
-    @Transactional
-    public void upgradeRole(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
-
-        if (user.getRole() != UserRole.PREMIUM) {
-            user.setRole(UserRole.PREMIUM);
-            userRepository.save(user);
-        }
-    }
-
-    @Transactional
-    public void downgradeRole(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
-
-        if (user.getRole() != UserRole.STANDARD) {
-            user.setRole(UserRole.STANDARD);
-            userRepository.save(user);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public User getUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::new);
-    }
 
     private void validateAuthKey(String key) {
         if (!authKey.equals(key)) {

@@ -8,6 +8,7 @@ import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.SubscriptionPlanRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
+import com.kkambbak.core.service.UserRoleService;
 import com.kkambbak.domain.payment.dto.SubscriptionDto;
 import com.kkambbak.domain.payment.exception.PlanNotFoundException;
 import com.kkambbak.domain.payment.exception.SubscriptionNotFoundException;
@@ -32,7 +33,7 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final KakaoPayService kakaoPayService;
-    private final UserService userService;
+    private final UserRoleService userRoleService;
     private final MailSender mailSender;
 
     /**
@@ -91,7 +92,7 @@ public class SubscriptionService {
         if (!subscription.isActive()) {
             subscription.expire();
             subscriptionRepository.save(subscription);
-            userService.downgradeRole(userId);
+            userRoleService.downgradeRole(userId);
 
             return SubscriptionStatus.EXPIRED;
         }
@@ -130,7 +131,7 @@ public class SubscriptionService {
         subscriptionRepository.save(subscription);
 
         try {
-            User user = userService.getUser(userId);
+            User user = userRoleService.getUser(userId);
             mailSender.sendSubscriptionCancelledEmail(
                 user.getEmail(),
                 user.getName(),
