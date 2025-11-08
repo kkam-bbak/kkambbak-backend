@@ -8,11 +8,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum UserErrorCode implements ResponseCode {
 
-    USER_NOT_FOUND("U001", "User not found"),
-    INVALID_AUTH_KEY("U002", "Invalid authentication key"),
-    LOGOUT_FAILED("U003", "Logout failed"),
-    GUEST_NOT_FOUND("U004", "Guest account not found"),
-    INVALID_GUEST_ID("U005", "Invalid guest ID format");
+    USER_NOT_FOUND("US001", "User not found"),
+    INVALID_AUTH_KEY("US002", "Invalid authentication key"),
+    LOGOUT_FAILED("US003", "Logout failed"),
+    GUEST_NOT_FOUND("US004", "Guest account not found"),
+    INVALID_GUEST_ID("US005", "Invalid guest ID format"),
+    PROFILE_UPDATE_FAILED("US006", "Profile update failed"),
+    PROFILE_VALIDATION_FAILED("US007", "Profile validation failed");
 
     private final String statusCode;
     private final String message;

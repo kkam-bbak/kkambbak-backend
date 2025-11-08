@@ -1,0 +1,12 @@
+cron:
+  # OTP 만료 작업 (5분마다 실행)
+  otp-expire-job: 0 */5 * * * *
+
+  # 정기결제 자동 갱신 작업 (매일 정오 실행)
+  subscription-job: 0 0 12 * * *
+
+  # 구독 만료 처리 작업 (매일 자정 실행)
+  subscription-expiry-job: 0 0 0 * * *
+
+  # 구독 종료 예정 알림 (매일 오전 10시 실행)
+  subscription-expiry-reminder-job: 0 0 10 * * *

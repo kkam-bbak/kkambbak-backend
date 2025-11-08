@@ -1,0 +1,71 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: kkambbak-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kkambbak
+          application: kkambbak-api
+          __path__: /var/log/app/*.log
+
+    pipeline_stages:
+      - multiline:
+          firstline: '^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\]'
+          max_wait_time: 3s
+
+      - regex:
+          expression: '^\[(?P<timestamp>[^\]]+)\]\s+(?P<level>\w+)\s+(?P<pid>\d+)?\s*---\s+\[(?P<thread>[^\]]+)\]\s+(?P<logger>[^\s]+)\s+:\s+(?P<message>.*)'
+
+      - structured_metadata:
+          timestamp:
+
+      - labels:
+          level:
+          logger:
+          thread:
+
+      - match:
+          selector: '{logger="org.zalando.logbook"}'
+          stages:
+            - json:
+                expressions:
+                  log_level: level
+                  log_message: message
+                  trace_id: correlation
+                  http_method: method
+                  http_path: path
+                  http_status: status
+                  origin: origin
+                  req_type: type
+                  remote: remote
+                  protocol: protocol
+                  duration: duration
+                  request_body: body
+                  request_headers: headers
+                source: message
+            - labels:
+                trace_id:
+                http_status:
+            - structured_metadata:
+                http_method:
+                http_path:
+                duration:
+                origin:
+                protocol:
+                remote:
+                req_type:
+                log_message:
+                request_body:
+                request_headers:
+            - output:
+                source: log_message

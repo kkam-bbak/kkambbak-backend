@@ -5,46 +5,27 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
-  datasource:
-    url: ${DB_URL:jdbc:h2:mem:testdb}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+  profiles:
+    include:
+      - core
+      - client
 
-  jpa:
-    hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:create-drop}
-    properties:
-      hibernate:
-        dialect: ${JPA_DIALECT:org.hibernate.dialect.H2Dialect}
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
-
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:test-google-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:test-google-client-secret}
-            scope:
-              - email
-              - profile
+server:
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      protocol-header-value: https
 
 jwt:
   secret: ${JWT_SECRET:test-jwt-secret-key-for-testing-minimum-256-bits-required-for-hs256-algorithm-security}
@@ -59,3 +40,23 @@ app:
     otp-expiry-minutes: ${EMAIL_OTP_EXPIRY_MINUTES:5}
   auth:
     key: ${AUTH_KEY:test-auth-key-1234}
+  user:
+    default-profile-image: ${DEFAULT_PROFILE_IMAGE:https://DEFAULT_PROFILE_IMAGE}
+
+# Actuator & Prometheus 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:default}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

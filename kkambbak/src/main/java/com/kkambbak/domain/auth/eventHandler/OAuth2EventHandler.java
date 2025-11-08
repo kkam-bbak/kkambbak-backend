@@ -35,13 +35,15 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final EmailService emailService;
-    private final EmailVerificationRepository emailVerificationRepository;
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
 
     @Value("${app.email.redirect-uri:http://localhost:3000/verify-email}")
     private String emailVerificationRedirectUri;
+
+    @Value("${app.user.default-profile-image}")
+    private String defaultProfileImage;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -66,7 +68,7 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         .build().toUriString();
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
-                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail);
+                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail, true);
 
                 String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
                         .queryParam("code", emailVerification.getVerificationCode())
@@ -85,15 +87,16 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
         if ("google".equalsIgnoreCase(registrationId)) {
             GoogleOAuth2UserInfo userInfo = new GoogleOAuth2UserInfo(oAuth2User.getAttributes());
 
+            String profileImage = defaultProfileImage;
+
             if (guestProviderId != null && !guestProviderId.isEmpty()) {
                 try {
                     User upgradedUser = userService.upgradeGuestToGoogle(
                             guestProviderId,
                             userInfo.getSocialId(),
                             userInfo.getEmail(),
-                            userInfo.getFirstName(),
-                            userInfo.getLastName(),
-                            userInfo.getProfileImage()
+                            userInfo.getName(),
+                            profileImage
                     );
 
                     if (upgradedUser != null) {
@@ -103,9 +106,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                                 "google",
                                 userInfo.getSocialId(),
                                 userInfo.getEmail(),
-                                userInfo.getFirstName(),
-                                userInfo.getLastName(),
-                                userInfo.getProfileImage()
+                                userInfo.getName(),
+                                profileImage
                         );
                     }
                 } catch (Exception e) {
@@ -113,9 +115,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                             "google",
                             userInfo.getSocialId(),
                             userInfo.getEmail(),
-                            userInfo.getFirstName(),
-                            userInfo.getLastName(),
-                            userInfo.getProfileImage()
+                            userInfo.getName(),
+                            profileImage
                     );
                 }
             } else {
@@ -123,9 +124,8 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         "google",
                         userInfo.getSocialId(),
                         userInfo.getEmail(),
-                        userInfo.getFirstName(),
-                        userInfo.getLastName(),
-                        userInfo.getProfileImage()
+                        userInfo.getName(),
+                        profileImage
                 );
             }
         } else {

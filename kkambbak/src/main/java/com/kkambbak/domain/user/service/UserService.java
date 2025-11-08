@@ -2,13 +2,19 @@ package com.kkambbak.domain.user.service;
 
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
+import com.kkambbak.core.entity.user.enums.Gender;
+import com.kkambbak.core.entity.user.enums.UserStatus;
+import com.kkambbak.core.entity.user.enums.UserRole;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
+import com.kkambbak.domain.user.dto.UpdateProfileDto;
+import com.kkambbak.domain.user.dto.GetProfileDto;
 import com.kkambbak.domain.user.exception.InvalidAuthKeyException;
 import com.kkambbak.domain.user.exception.LogoutFailedException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
 import com.kkambbak.domain.user.exception.GuestNotFoundException;
 import com.kkambbak.domain.user.exception.InvalidGuestIdException;
+import com.kkambbak.domain.user.exception.ProfileValidationException;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import com.kkambbak.global.security.UserDetailsImpl;
@@ -33,22 +39,24 @@ public class UserService {
     @Value("${app.auth.key}")
     private String authKey;
 
+    @Value("${app.user.default-profile-image}")
+    private String defaultProfileImage;
+
     @Transactional
     public User createOrUpdateUser(String provider, String providerId, String email,
-                                   String firstName, String lastName, String profileImage) {
+                                   String name, String profileImage) {
         AuthProvider authProvider = AuthProvider.valueOf(provider.toUpperCase());
 
         return userRepository.findByProviderAndProviderId(authProvider, providerId)
                 .map(existingUser -> {
                     return userRepository.save(
-                            existingUser.updateFromOAuth2(email, firstName, lastName, profileImage)
+                            existingUser.updateFromOAuth2(email, name, profileImage)
                     );
                 })
                 .orElseGet(() -> {
                     User newUser = User.builder()
                             .email(email)
-                            .firstName(firstName)
-                            .lastName(lastName)
+                            .name(name)
                             .profileImage(profileImage)
                             .provider(authProvider)
                             .providerId(providerId)
@@ -62,15 +70,16 @@ public class UserService {
     @Transactional
     public User createGuestUser() {
         String providerId = "guest_" + UUID.randomUUID();
-        String lastNameMasked = providerId.substring(Math.max(0, providerId.length() - 8));
+        String guestName = "Guest_" + providerId.substring(Math.max(0, providerId.length() - 8));
 
         User guestUser = User.builder()
-                .firstName("Guest")
-                .lastName(lastNameMasked)
+                .name(guestName)
                 .email(null)
+                .profileImage(defaultProfileImage)
                 .provider(AuthProvider.GUEST)
                 .providerId(providerId)
                 .isGuest(true)
+                .status(UserStatus.ACTIVE)
                 .build();
 
         return userRepository.save(guestUser);
@@ -98,7 +107,6 @@ public class UserService {
 
         return LoginTokenDto.GuestLoginResponse.builder()
                 .tokenData(tokenData)
-                .userId(guestUser.getId())
                 .providerId(guestUser.getProviderId())
                 .isGuest(true)
                 .build();
@@ -106,8 +114,7 @@ public class UserService {
 
     @Transactional
     public User upgradeGuestToGoogle(String guestProviderId, String googleProviderId,
-                                     String email, String firstName, String lastName,
-                                     String profileImage) {
+                                     String email, String name, String profileImage) {
         User guestUser = userRepository.findByProviderAndProviderIdWithLock(AuthProvider.GUEST, guestProviderId)
                 .orElse(null);
 
@@ -118,21 +125,18 @@ public class UserService {
 
         if (!AuthProvider.GUEST.equals(guestUser.getProvider())) {
             log.warn("Guest user already upgraded - guestProviderId: {}, current provider: {}", guestProviderId, guestUser.getProvider());
-            return userRepository.save(guestUser.updateFromOAuth2(email, firstName, lastName, profileImage));
+            return userRepository.save(guestUser.updateFromOAuth2(email, name, profileImage));
         }
 
         guestUser.upgradeToGoogleUser(
                 AuthProvider.GOOGLE,
                 googleProviderId,
                 email,
-                firstName,
-                lastName,
+                name,
                 profileImage
         );
 
-        User upgradedUser = userRepository.save(guestUser);
-
-        return upgradedUser;
+        return userRepository.save(guestUser);
     }
 
     @Transactional(readOnly = true)
@@ -156,6 +160,64 @@ public class UserService {
                 .build();
     }
 
+    public void register(Long userId, UpdateProfileDto request, Gender gender) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        user.updateProfile(
+                request.getName(),
+                gender,
+                request.getCountryOfOrigin(),
+                request.getPersonalityOrImage(),
+                request.getPreferredNameMeaning()
+        );
+
+        userRepository.save(user);
+    }
+
+    public Gender validateProfileRequest(UpdateProfileDto request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new ProfileValidationException("이름은 필수입니다");
+        }
+        if (request.getName().length() > 200) {
+            throw new ProfileValidationException("이름은 200자 이하여야 합니다");
+        }
+
+        if (request.getCountryOfOrigin() == null || request.getCountryOfOrigin().isBlank()) {
+            throw new ProfileValidationException("국가는 필수입니다");
+        }
+        if (request.getCountryOfOrigin().length() > 100) {
+            throw new ProfileValidationException("국가는 100자 이하여야 합니다");
+        }
+
+        if (request.getPersonalityOrImage() == null || request.getPersonalityOrImage().isBlank()) {
+            throw new ProfileValidationException("Personality, Image는 필수입니다");
+        }
+
+        if (request.getPreferredNameMeaning() == null || request.getPreferredNameMeaning().isBlank()) {
+            throw new ProfileValidationException("선호하는 이름 의미는 필수입니다");
+        }
+
+        if (request.getGender() == null || request.getGender().isBlank()) {
+            throw new ProfileValidationException("성별은 필수입니다");
+        }
+
+        try {
+            return Gender.valueOf(request.getGender().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid gender value: {}", request.getGender());
+            throw new ProfileValidationException("유효하지 않은 성별입니다. (MALE, FEMALE만 가능)");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public GetProfileDto getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        return GetProfileDto.from(user);
+    }
+
     @Transactional
     public void logout(UserDetailsImpl userDetails) {
         Long userId = userDetails.getUserId();
@@ -177,6 +239,34 @@ public class UserService {
                 log.warn("No authorization header found for logout - userId: {}", userId);
             }
         }
+    }
+
+    @Transactional
+    public void upgradeRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != UserRole.PREMIUM) {
+            user.setRole(UserRole.PREMIUM);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional
+    public void downgradeRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != UserRole.STANDARD) {
+            user.setRole(UserRole.STANDARD);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
     }
 
     private void validateAuthKey(String key) {
