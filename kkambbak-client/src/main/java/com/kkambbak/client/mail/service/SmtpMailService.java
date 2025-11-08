@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -22,6 +23,7 @@ public class SmtpMailService implements MailSender {
     private String fromEmail;
 
     @Override
+    @Async
     public void sendOtpEmail(String toEmail, String otpCode) {
         emailRateLimiter.checkAndIncrementEmailCount(toEmail);
 
@@ -35,6 +37,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendPaymentSuccessEmail(String toEmail, String userName, LocalDateTime renewalDate, Long amount, String paymentMethod, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -49,6 +52,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendSubscriptionExpiryReminderEmail(String toEmail, String userName, LocalDateTime expiryDate, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -63,6 +67,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendPaymentFailureEmail(String toEmail, String userName, LocalDateTime renewalDate, Long amount, String paymentMethod, String planName, String errorMessage) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -78,6 +83,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendSubscriptionCancelledEmail(String toEmail, String userName, LocalDateTime cancelledDate, LocalDateTime endDate, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
