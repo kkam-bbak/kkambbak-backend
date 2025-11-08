@@ -4,6 +4,7 @@ import com.kkambbak.core.entity.BaseEntity;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
 import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.core.entity.user.enums.UserStatus;
+import com.kkambbak.core.entity.user.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
@@ -72,6 +74,11 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status = UserStatus.PENDING;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.STANDARD;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

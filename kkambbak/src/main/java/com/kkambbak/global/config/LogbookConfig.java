@@ -37,9 +37,24 @@ public class LogbookConfig {
                             path.endsWith(".png") ||
                             path.endsWith(".ico") ||
                             path.endsWith(".html") ||
+                            path.equals("/") ||
+                            path.equals("/robots.txt") ||
                             path.equals("/favicon-16x16.png") ||
                             path.equals("/favicon-32x32.png") ||
-                            path.equals("/swagger-ui.html")
+                            path.equals("/swagger-ui.html") ||
+                            // Bot attack and vulnerability scanning paths
+                            path.contains("/.git") ||
+                            path.contains("/setup.cgi") ||
+                            path.contains("/docker") ||
+                            path.contains("/ReportServer") ||
+                            path.contains("/geoserver") ||
+                            path.contains("/sitemap.xml") ||
+                            path.contains("MGLNDD") ||
+                            path.contains("/manager") ||
+                            path.contains("/backup") ||
+                            path.contains("/bin") ||
+                            path.endsWith(".xml") ||
+                            path.endsWith(".env")
             );
         };
 
