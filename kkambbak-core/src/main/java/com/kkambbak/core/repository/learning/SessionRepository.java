@@ -8,55 +8,56 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-/**
- * 세션 목록 조회용 레포지토리
- */
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
-    // 상위노출: 점수 내림차순, slug 오름차순
+    // 상위노출 세션 조회
     @Query("""
-        select s
-          from Session s
-          join SurveyTopExposureRule r
-            on r.sessionSlug = s.slug
-         where r.categoryType = :categoryType
-           and r.surveyKey     = :surveyKey
-           and r.enabled       = true
-           and s.category.type = :categoryType
-         order by r.exposureScore desc, s.slug asc
+        SELECT s
+        FROM Session s
+        JOIN SurveyTopExposureRule r ON r.session.id = s.id
+        WHERE r.categoryType = :categoryType
+          AND r.surveyKey = :surveyKey
+          AND r.enabled = true
+          AND s.category.type = :categoryType
+          AND (:cursor IS NULL OR s.id > :cursor)
+        ORDER BY r.exposureScore DESC, s.id ASC
     """)
-    List<Session> findTopExposureSessions(@Param("categoryType") CategoryType categoryType,
-                                          @Param("surveyKey") String surveyKey,
-                                          Pageable limitOnly);
+    List<Session> findTopExposureSessions(
+            @Param("categoryType") CategoryType categoryType,
+            @Param("surveyKey") String surveyKey,
+            @Param("cursor") Long cursor,
+            Pageable pageable
+    );
 
-    //해당 설문키의 상위노출 세션 slug 전체를 반환 (페이징 없음, 제외 목록용)
+    // 상위노출 세션 ID만 전체 조회
     @Query("""
-        select s.slug
-          from Session s
-          join SurveyTopExposureRule r
-            on r.sessionSlug = s.slug
-         where r.categoryType = :categoryType
-           and r.surveyKey     = :surveyKey
-           and r.enabled       = true
-           and s.category.type = :categoryType
+        SELECT s.id
+        FROM Session s
+        JOIN SurveyTopExposureRule r ON r.session.id = s.id
+        WHERE r.categoryType = :categoryType
+          AND r.surveyKey = :surveyKey
+          AND r.enabled = true
+          AND s.category.type = :categoryType
+        ORDER BY r.exposureScore DESC, s.id ASC
     """)
-    List<String> findAllTopExposureSlugs(@Param("categoryType") CategoryType categoryType,
-                                         @Param("surveyKey") String surveyKey);
+    List<Long> findAllTopExposureIds(
+            @Param("categoryType") CategoryType categoryType,
+            @Param("surveyKey") String surveyKey
+    );
 
-    /**
-     * 기본목록: 상위노출 제외, 커서 이후 id 오름차순
-     * - excludedSlugs가 비었으면 null로 넘겨야 JPQL에서 조건이 생략됨
-     */
+    // 일반 세션 조회 (상위노출 제외, 커서 기반 페이징)
     @Query("""
-        select s
-          from Session s
-         where s.category.type = :categoryType
-           and (:excludedSlugs is null or s.slug not in :excludedSlugs)
-           and (:cursor is null or s.id > :cursor)
-         order by s.id asc
+        SELECT s
+        FROM Session s
+        WHERE s.category.type = :categoryType
+          AND (:excludeIds IS NULL OR s.id NOT IN :excludeIds)
+          AND (:cursor IS NULL OR s.id > :cursor)
+        ORDER BY s.id ASC
     """)
-    List<Session> findDefaultSessions(@Param("categoryType") CategoryType categoryType,
-                                      @Param("excludedSlugs") List<String> excludedSlugs,
-                                      @Param("cursor") Long cursor,
-                                      Pageable limitOnly);
+    List<Session> findDefaultSessions(
+            @Param("categoryType") CategoryType categoryType,
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("cursor") Long cursor,
+            Pageable pageable
+    );
 }

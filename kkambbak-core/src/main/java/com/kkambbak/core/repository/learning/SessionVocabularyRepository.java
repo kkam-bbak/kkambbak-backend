@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface SessionVocabularyRepository extends JpaRepository<SessionVocabulary, Long> {
 
-
+    // 여러 세션의 단어 개수를 한 번에 조회
     @Query("""
         select sv.session.id as sessionId, count(sv.id) as cnt
           from SessionVocabulary sv

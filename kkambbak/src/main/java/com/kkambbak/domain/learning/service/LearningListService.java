@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class LearningListService {
-
+    // limit : 한 페이지에 나타낼 세션의 개수
     private static final int MAX_LIMIT = 50;
 
     private final SessionRepository sessionRepository;
@@ -33,89 +33,189 @@ public class LearningListService {
 
     public LearningSessionListResponse getLearningList(
             Long userId,
-            CategoryType categoryType,
+            CategoryType category,
             String surveyKey,
             Long cursor,
             int limit
     ) {
-        // 입력 검증
-        if (limit <= 0 || limit > MAX_LIMIT) throw new InvalidPagingParamException();
-        if (cursor != null && cursor < 0)      throw new InvalidPagingParamException();
+        //limit과 cursor 검증
+        validatePagingParams(cursor, limit);
 
-        final String normalizedKey =
-                (surveyKey == null || surveyKey.isBlank()) ? null : surveyKey.trim().toUpperCase();
+        // 설문키(surveyKey) 정규화 (null/공백 처리, 대문자 변환)
+        String normalizedKey = normalizeSurveyKey(surveyKey);
 
-        // 상위 노출 관련
-        List<Session> topExposure = Collections.emptyList(); // 첫 페이지 상위 노출 카드
-        List<String> excludeSlugs;
+        // 상위노출 세션 ID 목록 조회(일반 세션 목록에서 상위노출 세션이 중복으로 조회되는걸 막기 위해)
+        List<Long> excludeIds = getExcludeIds(category, normalizedKey);
+
+        // 상위노출 세션 조회
+        List<Session> topExposure = fetchTopExposureSessions(
+                category, normalizedKey, cursor, limit
+        );
+
+        // 상위노출을 제외한 나머지 일반 세션 조회
+        DefaultSessionResult defaultResult = fetchDefaultSessions(
+                category, excludeIds, cursor, limit, topExposure.size()
+        );
+
+        // 세션 합치기 (상위 노출 세션 + 일반 세션을 하나의 리스트로 합침)
+        List<Session> allSessions = new ArrayList<>(
+                topExposure.size() + defaultResult.sessions().size()
+        );
+        allSessions.addAll(topExposure); // 상위 노출 세션
+        allSessions.addAll(defaultResult.sessions()); // 일반 세션
+
+        // 세션이 하나도 없으면 빈 응답 반환
+        if (allSessions.isEmpty()) {
+            return LearningSessionListResponse.of(category, List.of(), null, false);
+        }
+
+        // 세션 ID 목록 추출
+        List<Long> sessionIds = allSessions.stream()
+                .map(Session::getId)
+                .toList();
+
+        // 각 세션의 단어 개수 조회 ( 예 : topik1 = 3개, topik2 = 3개)
+        Map<Long, Integer> vocabCountMap = fetchVocabularyCounts(sessionIds);
+        // 사용자의 학습 결과 조회 (학습을 완료 했는지, 소요 시간이 얼마나 되는지)
+        Map<Long, LearningResult> resultMap = fetchLearningResults(userId, sessionIds);
+
+        // DTO 변환
+        List<SessionCardDto> dtos = convertToSessionCards(
+                allSessions, vocabCountMap, resultMap
+        );
+
+        // 다음 페이지 시작 위치(nextCursor)와 더 있는지(hasNext) 계산
+        PagingInfo pagingInfo = calculatePagingInfo(
+                topExposure, defaultResult.sessions(), defaultResult.hasMore()
+        );
+
+        return LearningSessionListResponse.of(
+                category,
+                dtos,
+                pagingInfo.nextCursor(),
+                pagingInfo.hasNext()
+        );
+    }
+
+    //limit과 cursor 검증
+    private void validatePagingParams(Long cursor, int limit) {
+        if (limit <= 0 || limit > MAX_LIMIT) {
+            throw new InvalidPagingParamException();
+        }
+        if (cursor != null && cursor < 0) {
+            throw new InvalidPagingParamException();
+        }
+    }
+
+    // 설문키(surveyKey) 정규화 (null/공백 처리, 대문자 변환)
+    private String normalizeSurveyKey(String surveyKey) {
+        return (surveyKey == null || surveyKey.isBlank())
+                ? null
+                : surveyKey.trim().toUpperCase();
+    }
+
+    // 상위노출 세션 ID 목록 조회(일반 세션 목록에서 상위노출 세션이 중복으로 조회되는걸 막기 위해)
+    private List<Long> getExcludeIds(CategoryType category, String normalizedKey) {
+
+        if (normalizedKey == null) {
+            return null;
+        }
 
         try {
-            // 설문 키가 있으면 제외용 slug 전체를 미리 조회 (모든 페이지에서 사용)
-            if (normalizedKey != null) {
-                excludeSlugs = sessionRepository.findAllTopExposureSlugs(categoryType, normalizedKey);
-                if (excludeSlugs != null && excludeSlugs.isEmpty()) {
-                    excludeSlugs = null;
-                }
-            } else {
-                excludeSlugs = null;
-            }
+            List<Long> excludeIds = sessionRepository.findAllTopExposureIds(
+                    category, normalizedKey
+            );
 
-            // 첫 페이지 + 설문키 존재 → 상위 노출 카드 실제로 뿌릴 데이터 조회
-            if (cursor == null && normalizedKey != null) {
-                topExposure = sessionRepository.findTopExposureSessions(
-                        categoryType, normalizedKey, PageRequest.of(0, limit)
-                );
 
-                // 규칙-세션 카테고리 불일치 방어
-                boolean mismatch = topExposure.stream()
-                        .anyMatch(s -> s.getCategory().getType() != categoryType);
-                if (mismatch) throw new InconsistentExposureRuleException();
-            }
+            List<Long> result = (excludeIds != null && excludeIds.isEmpty()) ? null : excludeIds;
+
+            return result;
         } catch (DataAccessException e) {
             throw new LearningQueryException();
         }
+    }
 
-        // 기본 목록(상위노출 제외, 커서 기반)
-        List<Session> defaults;
-        boolean hasMoreDefaults = false; // 기본 목록 다음 페이지 여부
+
+    // 상위노출 세션 조회
+    private List<Session> fetchTopExposureSessions(
+            CategoryType categoryType,
+            String normalizedKey,
+            Long cursor,
+            int limit
+    ) {
+        // 설문키 없으면 빈 리스트
+        if (normalizedKey == null) {
+            return Collections.emptyList();
+        }
+
+        if(cursor != null) {
+            return Collections.emptyList();
+        }
+
         try {
-            int remaining = Math.max(0, limit - topExposure.size());
+            List<Session> topExposure = sessionRepository.findTopExposureSessions(
+                    categoryType,
+                    normalizedKey,
+                    null,
+                    PageRequest.of(0, limit)
+            );
 
-            if (remaining > 0) {
-                // 다음 페이지 존재 여부 판단을 위해 remaining+1개 조회
-                List<Session> overFetched = sessionRepository.findDefaultSessions(
-                        categoryType,
-                        // 첫 페이지 뿐 아니라 모든 페이지에서 상위노출 전체 slug 제외
-                        (excludeSlugs == null || excludeSlugs.isEmpty()) ? null : excludeSlugs,
-                        cursor,
-                        PageRequest.of(0, remaining + 1)
-                );
-                hasMoreDefaults = overFetched.size() > remaining;
-                defaults = (overFetched.size() > remaining)
-                        ? overFetched.subList(0, remaining)
-                        : overFetched;
-            } else {
-                defaults = Collections.emptyList();
+            // 카테고리 불일치 방어
+            boolean mismatch = topExposure.stream()
+                    .anyMatch(s -> s.getCategory().getType() != categoryType);
+
+            if (mismatch) {
+                throw new InconsistentExposureRuleException();
             }
+
+            return topExposure;
         } catch (DataAccessException e) {
             throw new LearningQueryException();
         }
+    }
 
-        // 상위노출 목록과 기본 목록 합치기
-        List<Session> all = new ArrayList<>(topExposure.size() + defaults.size());
-        all.addAll(topExposure);
-        all.addAll(defaults);
+    // 상위노출을 제외한 나머지 일반 세션 목록 조회
+    private DefaultSessionResult fetchDefaultSessions(
+            CategoryType category,
+            List<Long> excludeIds,
+            Long cursor,
+            int limit,
+            int topExposureSize
+    ) {
 
-        if (all.isEmpty()) {
-            // 아무 것도 없으면 커서/hasNext도 기본값으로 응답
-            return LearningSessionListResponse.of(categoryType, List.of(), null, false);
+        int remaining = Math.max(0, limit - topExposureSize);
+
+        if (remaining == 0) {
+            return new DefaultSessionResult(Collections.emptyList(), false);
         }
 
-        // 단어 수 일괄 카운트
-        Map<Long, Integer> vocabCountMap;
-        List<Long> sessionIds = all.stream().map(Session::getId).toList();
         try {
-            vocabCountMap = sessionVocabularyRepository.findCountsBySessionIds(sessionIds).stream()
+            List<Long> finalExcludeIds = (excludeIds == null || excludeIds.isEmpty()) ? null : excludeIds;
+
+            List<Session> overFetched = sessionRepository.findDefaultSessions(
+                    category,
+                    finalExcludeIds,
+                    cursor,
+                    PageRequest.of(0, remaining + 1)
+            );
+
+
+            boolean hasMore = overFetched.size() > remaining;
+
+            List<Session> sessions = hasMore
+                    ? overFetched.subList(0, remaining)
+                    : overFetched;
+
+            return new DefaultSessionResult(sessions, hasMore);
+        } catch (DataAccessException e) {
+            throw new LearningQueryException();
+        }
+    }
+    // 세션별 단어 개수 조회
+    private Map<Long, Integer> fetchVocabularyCounts(List<Long> sessionIds) {
+        try {
+            return sessionVocabularyRepository.findCountsBySessionIds(sessionIds)
+                    .stream()
                     .collect(Collectors.toMap(
                             SessionVocabularyRepository.SessionIdCount::getSessionId,
                             r -> (int) r.getCnt()
@@ -123,58 +223,77 @@ public class LearningListService {
         } catch (DataAccessException e) {
             throw new LearningQueryException();
         }
+    }
 
-        // 사용자 학습결과 병합(완료/소요시간)
-        Map<Long, LearningResult> resultMap;
+    // 사용자의 학습 결과 조회
+    private Map<Long, LearningResult> fetchLearningResults(Long userId, List<Long> sessionIds) {
+        if (userId == null) {
+            return Map.of();
+        }
+
         try {
-            resultMap = (userId == null)
-                    ? Map.of()
-                    : learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
+            return learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
                     .stream()
-                    .collect(Collectors.toMap(lr -> lr.getSession().getId(), lr -> lr));
+                    .collect(Collectors.toMap(
+                            lr -> lr.getSession().getId(),
+                            lr -> lr
+                    ));
         } catch (DataAccessException e) {
             throw new LearningQueryException();
         }
+    }
 
-        // DTO 변환
-        List<SessionCardDto> dtos = all.stream()
-                .map(s -> {
-                    int vocabCount = vocabCountMap.getOrDefault(s.getId(), 0);
-                    LearningResult lr = resultMap.get(s.getId());
-                    return SessionCardDto.of(s, lr, vocabCount);
+    // 세션 → DTO 변환
+    private List<SessionCardDto> convertToSessionCards(
+            List<Session> sessions,
+            Map<Long, Integer> vocabCountMap,
+            Map<Long, LearningResult> resultMap
+    ) {
+        return sessions.stream()
+                .map(session -> {
+                    int vocabCount = vocabCountMap.getOrDefault(session.getId(), 0);
+                    LearningResult result = resultMap.get(session.getId());
+                    return SessionCardDto.of(session, result, vocabCount);
                 })
                 .toList();
+    }
 
-        // nextCursor / hasNext 계산
-        Long nextCursor = null;
-        boolean hasNext = false;
+    // 다음 페이지 시작 위치(nextCursor)와 더 있는지(hasNext) 계산
+    private PagingInfo calculatePagingInfo(
+            List<Session> topExposure,
+            List<Session> defaults,
+            boolean hasMoreDefaults
+    ) {
+        Long nextCursor;
+        boolean hasNext;
 
         if (!defaults.isEmpty()) {
-            // 기본 목록이 일부라도 내려갔다면 -> 마지막 기본목록 id를 커서로
             nextCursor = defaults.get(defaults.size() - 1).getId();
             hasNext = hasMoreDefaults;
+        } else if (!topExposure.isEmpty()) {
+            nextCursor = topExposure.get(topExposure.size() - 1).getId();
+            hasNext = hasMoreDefaults;
         } else {
-            // 기본 목록이 한 건도 안 내려간 경우(=상위노출만 내려간 경우)
-            try {
-                List<Session> peek = sessionRepository.findDefaultSessions(
-                        categoryType,
-                        (excludeSlugs == null || excludeSlugs.isEmpty()) ? null : excludeSlugs,
-                        null,
-                        PageRequest.of(0, 1)
-                );
-                if (!peek.isEmpty()) {
-                    nextCursor = peek.get(0).getId();
-                    hasNext = true;
-                } else {
-                    nextCursor = null;
-                    hasNext = false;
-                }
-            } catch (DataAccessException e) {
-                throw new LearningQueryException();
-            }
+            nextCursor = null;
+            hasNext = false;
         }
 
-        // 응답
-        return LearningSessionListResponse.of(categoryType, dtos, nextCursor, hasNext);
+        return new PagingInfo(nextCursor, hasNext);
     }
+
+    /**
+     * 일반 세션 조회 결과
+     */
+    private record DefaultSessionResult(
+            List<Session> sessions,
+            boolean hasMore
+    ) {}
+
+    /**
+     * 페이징 정보
+     */
+    private record PagingInfo(
+            Long nextCursor,
+            boolean hasNext
+    ) {}
 }

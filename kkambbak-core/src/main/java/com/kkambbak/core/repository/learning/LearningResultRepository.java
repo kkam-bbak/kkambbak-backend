@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface LearningResultRepository extends JpaRepository<LearningResult, Long> {
 
-    /** 사용자 + 세션목록 기준으로 한 번에 조회  */
+    // 사용자가 세션 목록중에서 어떤 세션을 학습했는지 한 번에 조회
     @Query("""
         select lr
           from LearningResult lr

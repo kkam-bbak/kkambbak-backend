@@ -4,10 +4,6 @@ import com.kkambbak.global.code.ResponseCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 학습 목록 관련 에러 코드 정의
- * - SurveyErrorCode와 동일한 형식 유지
- */
 @Getter
 @RequiredArgsConstructor
 public enum LearningErrorCode implements ResponseCode {

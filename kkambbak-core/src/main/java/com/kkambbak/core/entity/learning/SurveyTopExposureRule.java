@@ -9,7 +9,7 @@ import lombok.*;
 @Entity
 @Table(
         name = "survey_top_exposure_rule",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"category_type", "survey_key", "session_slug"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"category_type", "survey_key", "session_id"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -26,10 +26,11 @@ public class SurveyTopExposureRule extends BaseEntity {
     private CategoryType categoryType; // TOPIK / CASUAL
 
     @Column(name = "survey_key", nullable = false, length = 50)
-    private String surveyKey;          // 예: "BEGINNER", "FOOD_TRAVEL"
+    private String surveyKey;          // 예: "BEGINNER", "FOOD_AND_TRAVEL"
 
-    @Column(name = "session_slug", nullable = false, length = 100)
-    private String sessionSlug;        // 예: "topik_1", "emotions"
+    @ManyToOne(fetch=FetchType.LAZY, optional = false)
+    @JoinColumn(name = "session_id", nullable = false)
+    private Session session;
 
     @Column(name = "exposure_score", nullable = false)
     private Integer exposureScore;     // 숫자 클수록 상위 노출

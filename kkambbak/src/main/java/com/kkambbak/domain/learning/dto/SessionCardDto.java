@@ -17,7 +17,7 @@ public class SessionCardDto {
     private boolean completed;       // 학습 완료 여부
     private int durationSeconds;     // 학습 소요 시간(초)
 
-    /** 학습결과 없는 기본 카드 */
+    // 사용자가 한 번도 학습하지 않은 세션
     public static SessionCardDto from(Session session, int vocabCount) {
         return SessionCardDto.builder()
                 .id(session.getId())
@@ -29,7 +29,7 @@ public class SessionCardDto {
                 .build();
     }
 
-    /** 학습결과 포함 카드 */
+    // 사용자가 이 세션을 이미 학습한 적이 있는 세션
     public static SessionCardDto of(Session session, LearningResult result, int vocabCount) {
         return SessionCardDto.builder()
                 .id(session.getId())
