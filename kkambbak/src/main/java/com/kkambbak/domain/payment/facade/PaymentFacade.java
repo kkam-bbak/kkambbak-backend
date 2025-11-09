@@ -9,6 +9,7 @@ import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
 import com.kkambbak.core.repository.payment.PayHistoryRepository;
 import com.kkambbak.domain.payment.dto.PaymentDto;
+import com.kkambbak.core.service.UserRoleService;
 import com.kkambbak.domain.payment.exception.GuestUserCannotPayException;
 import com.kkambbak.domain.payment.exception.PaymentNotFoundException;
 import com.kkambbak.domain.payment.service.PaymentService;
@@ -31,11 +32,11 @@ public class PaymentFacade {
     private final SubscriptionService subscriptionService;
     private final PayHistoryRepository payHistoryRepository;
     private final DiscordClient discordClient;
-    private final UserService userService;
+    private final UserRoleService userRoleService;
     private final MailSender mailSender;
 
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, PaymentDto.CreateRequest request) {
-        User user = userService.getUser(userId);
+        User user = userRoleService.getUser(userId);
         if (user.getProvider() == AuthProvider.GUEST) {
             throw new GuestUserCannotPayException();
         }
@@ -69,10 +70,10 @@ public class PaymentFacade {
             payHistory.setSubscriptionId(subscription.getId());
             payHistoryRepository.save(payHistory);
 
-            userService.upgradeRole(userId);
+            userRoleService.upgradeRole(userId);
 
             try {
-                User user = userService.getUser(userId);
+                User user = userRoleService.getUser(userId);
                 mailSender.sendPaymentSuccessEmail(
                     user.getEmail(),
                     user.getName(),
@@ -105,7 +106,7 @@ public class PaymentFacade {
                     SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
 
                     try {
-                        User user = userService.getUser(payHistory.getUserId());
+                        User user = userRoleService.getUser(payHistory.getUserId());
                         mailSender.sendPaymentFailureEmail(
                             user.getEmail(),
                             user.getName(),

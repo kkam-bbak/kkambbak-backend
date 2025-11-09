@@ -6,7 +6,7 @@ import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
-import com.kkambbak.domain.user.service.UserService;
+import com.kkambbak.core.service.UserRoleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class SubscriptionExpiryReminderService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final MailSender mailSender;
-    private final UserService userService;
+    private final UserRoleService userRoleService;
     private final DiscordClient discordClient;
 
     @Transactional
@@ -64,7 +64,7 @@ public class SubscriptionExpiryReminderService {
 
     private void sendReminderEmail(Subscription subscription) {
         try {
-            User user = userService.getUser(subscription.getUserId());
+            User user = userRoleService.getUser(subscription.getUserId());
             mailSender.sendSubscriptionExpiryReminderEmail(
                 user.getEmail(),
                 user.getName(),
