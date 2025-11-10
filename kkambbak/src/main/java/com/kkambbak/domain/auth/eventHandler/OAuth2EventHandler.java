@@ -1,9 +1,10 @@
 package com.kkambbak.domain.auth.eventHandler;
 
-import com.kkambbak.client.mail.exception.EmailRateLimitExceededException;
 import com.kkambbak.core.entity.user.EmailVerification;
 import com.kkambbak.core.entity.user.User;
+import com.kkambbak.core.entity.user.enums.OtpStatus;
 import com.kkambbak.core.entity.user.enums.UserStatus;
+import com.kkambbak.core.repository.user.EmailVerificationRepository;
 import com.kkambbak.domain.auth.eventHandler.dto.GoogleOAuth2UserInfo;
 import com.kkambbak.domain.auth.exception.OAuth2AuthenticationException;
 import com.kkambbak.domain.auth.exception.UnsupportedOAuth2ProviderException;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -66,21 +68,13 @@ public class OAuth2EventHandler extends SimpleUrlAuthenticationSuccessHandler {
                         .build().toUriString();
                 getRedirectStrategy().sendRedirect(request, response, targetUrl);
             } else {
-                try {
-                    EmailVerification emailVerification = emailService.sendOtpEmail(userEmail, true);
+                EmailVerification emailVerification = emailService.sendOtpEmail(userEmail, true);
 
-                    String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
-                            .queryParam("code", emailVerification.getVerificationCode())
-                            .build().toUriString();
+                String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
+                        .queryParam("code", emailVerification.getVerificationCode())
+                        .build().toUriString();
 
-                    getRedirectStrategy().sendRedirect(request, response, targetUrl);
-                } catch (EmailRateLimitExceededException e) {
-                    log.warn("Email rate limit exceeded for user: {}", userEmail);
-                    String targetUrl = UriComponentsBuilder.fromUriString(emailVerificationRedirectUri)
-                            .queryParam("error", "email_rate_limit_exceeded")
-                            .build().toUriString();
-                    getRedirectStrategy().sendRedirect(request, response, targetUrl);
-                }
+                getRedirectStrategy().sendRedirect(request, response, targetUrl);
             }
 
         } catch (Exception e) {

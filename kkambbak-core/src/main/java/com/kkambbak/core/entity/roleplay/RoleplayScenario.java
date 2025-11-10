@@ -22,4 +22,6 @@ public class RoleplayScenario extends BaseEntity {
     private String description;
 
     private Integer estimated_minutes;
+
+
 }
