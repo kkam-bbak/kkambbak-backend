@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -16,12 +17,19 @@ public class SmtpMailService implements MailSender {
 
     private final JavaMailSender javaMailSender;
     private final MailTemplate mailTemplate;
+    private final EmailRateLimiter emailRateLimiter;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
     @Override
     public void sendOtpEmail(String toEmail, String otpCode) {
+        emailRateLimiter.checkAndIncrementEmailCount(toEmail);
+        sendOtpEmailAsync(toEmail, otpCode);
+    }
+
+    @Async
+    protected void sendOtpEmailAsync(String toEmail, String otpCode) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
@@ -32,6 +40,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendPaymentSuccessEmail(String toEmail, String userName, LocalDateTime renewalDate, Long amount, String paymentMethod, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -46,6 +55,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendSubscriptionExpiryReminderEmail(String toEmail, String userName, LocalDateTime expiryDate, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -60,6 +70,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendPaymentFailureEmail(String toEmail, String userName, LocalDateTime renewalDate, Long amount, String paymentMethod, String planName, String errorMessage) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -75,6 +86,7 @@ public class SmtpMailService implements MailSender {
     }
 
     @Override
+    @Async
     public void sendSubscriptionCancelledEmail(String toEmail, String userName, LocalDateTime cancelledDate, LocalDateTime endDate, String planName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
