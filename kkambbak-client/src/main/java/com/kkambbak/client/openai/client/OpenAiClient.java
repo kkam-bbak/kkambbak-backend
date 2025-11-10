@@ -20,7 +20,6 @@ import java.util.Map;
 @Component
 public class OpenAiClient {
 
-
     private final WebClient openAiWebClient;
 
     private static final double DEFAULT_TEMPERATURE = 1.0;
