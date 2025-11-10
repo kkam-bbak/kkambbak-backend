@@ -23,10 +23,13 @@ public class SmtpMailService implements MailSender {
     private String fromEmail;
 
     @Override
-    @Async
     public void sendOtpEmail(String toEmail, String otpCode) {
         emailRateLimiter.checkAndIncrementEmailCount(toEmail);
+        sendOtpEmailAsync(toEmail, otpCode);
+    }
 
+    @Async
+    protected void sendOtpEmailAsync(String toEmail, String otpCode) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
