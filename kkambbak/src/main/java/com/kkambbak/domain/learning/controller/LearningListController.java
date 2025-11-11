@@ -20,14 +20,13 @@ public class LearningListController {
     public ApiResponse<LearningSessionListResponse> getLearningList(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestParam(name = "category") CategoryType category,
-            @RequestParam(name = "surveyKey", required = false) String surveyKey,
             @RequestParam(name = "cursor", required = false) Long cursor,
             @RequestParam(name = "limit", defaultValue = "10") int limit
     ) {
         Long userId = userDetails.getUserId();
 
         LearningSessionListResponse response = learningListService.getLearningList(
-                userId, category, surveyKey, cursor, limit
+                userId, category, cursor, limit
         );
         return ApiResponse.ok(response);
     }

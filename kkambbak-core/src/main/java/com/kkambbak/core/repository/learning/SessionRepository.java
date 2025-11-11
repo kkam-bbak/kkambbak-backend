@@ -2,6 +2,8 @@ package com.kkambbak.core.repository.learning;
 
 import com.kkambbak.core.entity.learning.Session;
 import com.kkambbak.core.entity.survey.enums.CategoryType;
+import com.kkambbak.core.entity.survey.enums.DifficultyLevel;
+import com.kkambbak.core.entity.survey.enums.InterestType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +18,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
         FROM Session s
         JOIN SurveyTopExposureRule r ON r.session.id = s.id
         WHERE r.categoryType = :categoryType
-          AND r.surveyKey = :surveyKey
+          AND ( r.difficultyLevel IS NULL OR r.difficultyLevel = :difficulty )
+          AND ( r.interestType   IS NULL OR r.interestType   = :interest  )
           AND r.enabled = true
           AND s.category.type = :categoryType
           AND (:cursor IS NULL OR s.id > :cursor)
@@ -24,8 +27,9 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     """)
     List<Session> findTopExposureSessions(
             @Param("categoryType") CategoryType categoryType,
-            @Param("surveyKey") String surveyKey,
-            @Param("cursor") Long cursor,
+            @Param("difficulty")   DifficultyLevel difficulty,
+            @Param("interest")     InterestType interest,
+            @Param("cursor")       Long cursor,
             Pageable pageable
     );
 
@@ -35,14 +39,16 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
         FROM Session s
         JOIN SurveyTopExposureRule r ON r.session.id = s.id
         WHERE r.categoryType = :categoryType
-          AND r.surveyKey = :surveyKey
+          AND ( r.difficultyLevel IS NULL OR r.difficultyLevel = :difficulty )
+          AND ( r.interestType   IS NULL OR r.interestType   = :interest  )
           AND r.enabled = true
           AND s.category.type = :categoryType
         ORDER BY r.exposureScore DESC, s.id ASC
     """)
     List<Long> findAllTopExposureIds(
             @Param("categoryType") CategoryType categoryType,
-            @Param("surveyKey") String surveyKey
+            @Param("difficulty")   DifficultyLevel difficulty,
+            @Param("interest")     InterestType interest
     );
 
     // 일반 세션 조회 (상위노출 제외, 커서 기반 페이징)
@@ -56,8 +62,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     """)
     List<Session> findDefaultSessions(
             @Param("categoryType") CategoryType categoryType,
-            @Param("excludeIds") List<Long> excludeIds,
-            @Param("cursor") Long cursor,
+            @Param("excludeIds")   List<Long> excludeIds,
+            @Param("cursor")       Long cursor,
             Pageable pageable
     );
 }

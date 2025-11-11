@@ -11,6 +11,8 @@ import com.kkambbak.domain.learning.dto.SessionCardDto;
 import com.kkambbak.domain.learning.exception.InconsistentExposureRuleException;
 import com.kkambbak.domain.learning.exception.InvalidPagingParamException;
 import com.kkambbak.domain.learning.exception.LearningQueryException;
+import com.kkambbak.domain.learning.support.SurveyPrefResolver;
+import com.kkambbak.domain.learning.support.SurveyPrefResolver.UserPref;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,26 +33,25 @@ public class LearningListService {
     private final SessionRepository sessionRepository;
     private final LearningResultRepository learningResultRepository;
     private final SessionVocabularyRepository sessionVocabularyRepository;
+    private final SurveyPrefResolver surveyPrefResolver;
 
     public LearningSessionListResponse getLearningList(
             Long userId,
             CategoryType category,
-            String surveyKey,
             Long cursor,
             int limit
     ) {
-        //limit과 cursor 검증
         validatePagingParams(cursor, limit);
 
-        // 설문키(surveyKey) 정규화 (null/공백 처리, 대문자 변환)
-        String normalizedKey = normalizeSurveyKey(surveyKey);
+        // 설문에서 난이도(difficultyLevel)와 관심사(interestType) 가져오기
+        Optional<UserPref> prefOpt = surveyPrefResolver.resolve(userId);
 
         // 상위노출 세션 ID 목록 조회(일반 세션 목록에서 상위노출 세션이 중복으로 조회되는걸 막기 위해)
-        List<Long> excludeIds = getExcludeIds(category, normalizedKey);
+        List<Long> excludeIds = getExcludeIds(category, prefOpt);
 
         // 상위노출 세션 조회
         List<Session> topExposure = fetchTopExposureSessions(
-                category, normalizedKey, cursor, limit
+                category, prefOpt, cursor, limit
         );
 
         // 상위노출을 제외한 나머지 일반 세션 조회
@@ -107,71 +109,42 @@ public class LearningListService {
         }
     }
 
-    // 설문키(surveyKey) 정규화 (null/공백 처리, 대문자 변환)
-    private String normalizeSurveyKey(String surveyKey) {
-        return (surveyKey == null || surveyKey.isBlank())
-                ? null
-                : surveyKey.trim().toUpperCase();
+    // 상위노출 세션 ID 목록 (중복 제거용)
+    private List<Long> getExcludeIds(CategoryType category, Optional<UserPref> prefOpt) {
+        if (prefOpt.isEmpty()) return null;
+
+        UserPref p = prefOpt.get();
+        List<Long> ids = withDb(() ->
+                sessionRepository.findAllTopExposureIds(category, p.difficultyLevel(), p.interestType())
+        );
+        return toNullIfEmpty(ids);
     }
 
-    // 상위노출 세션 ID 목록 조회(일반 세션 목록에서 상위노출 세션이 중복으로 조회되는걸 막기 위해)
-    private List<Long> getExcludeIds(CategoryType category, String normalizedKey) {
-
-        if (normalizedKey == null) {
-            return null;
-        }
-
-        try {
-            List<Long> excludeIds = sessionRepository.findAllTopExposureIds(
-                    category, normalizedKey
-            );
-
-
-            List<Long> result = (excludeIds != null && excludeIds.isEmpty()) ? null : excludeIds;
-
-            return result;
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
-    }
-
-
-    // 상위노출 세션 조회
+    // 상위노출 조회
     private List<Session> fetchTopExposureSessions(
             CategoryType categoryType,
-            String normalizedKey,
+            Optional<UserPref> prefOpt,
             Long cursor,
             int limit
     ) {
-        // 설문키 없으면 빈 리스트
-        if (normalizedKey == null) {
-            return Collections.emptyList();
-        }
+        if (prefOpt.isEmpty()) return Collections.emptyList();
+        if (cursor != null) return Collections.emptyList();
 
-        if(cursor != null) {
-            return Collections.emptyList();
-        }
+        UserPref p = prefOpt.get();
+        List<Session> topExposure = withDb(() ->
+                sessionRepository.findTopExposureSessions(
+                        categoryType,
+                        p.difficultyLevel(),
+                        p.interestType(),
+                        null,
+                        firstPage(limit)
+                )
+        );
 
-        try {
-            List<Session> topExposure = sessionRepository.findTopExposureSessions(
-                    categoryType,
-                    normalizedKey,
-                    null,
-                    PageRequest.of(0, limit)
-            );
+        boolean mismatch = topExposure.stream().anyMatch(s -> s.getCategory().getType() != categoryType);
+        if (mismatch) throw new InconsistentExposureRuleException();
 
-            // 카테고리 불일치 방어
-            boolean mismatch = topExposure.stream()
-                    .anyMatch(s -> s.getCategory().getType() != categoryType);
-
-            if (mismatch) {
-                throw new InconsistentExposureRuleException();
-            }
-
-            return topExposure;
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
+        return topExposure;
     }
 
     // 상위노출을 제외한 나머지 일반 세션 목록 조회
@@ -182,65 +155,50 @@ public class LearningListService {
             int limit,
             int topExposureSize
     ) {
-
         int remaining = Math.max(0, limit - topExposureSize);
+        if (remaining == 0) return new DefaultSessionResult(Collections.emptyList(), false);
 
-        if (remaining == 0) {
-            return new DefaultSessionResult(Collections.emptyList(), false);
-        }
-
-        try {
-            List<Long> finalExcludeIds = (excludeIds == null || excludeIds.isEmpty()) ? null : excludeIds;
-
-            List<Session> overFetched = sessionRepository.findDefaultSessions(
-                    category,
-                    finalExcludeIds,
-                    cursor,
-                    PageRequest.of(0, remaining + 1)
-            );
+        List<Long> finalExclude = toNullIfEmpty(excludeIds);
 
 
-            boolean hasMore = overFetched.size() > remaining;
+        List<Session> overFetched = withDb(() ->
+                sessionRepository.findDefaultSessions(
+                        category,
+                        finalExclude,
+                        cursor,
+                        firstPage(remaining + 1)
+                )
+        );
 
-            List<Session> sessions = hasMore
-                    ? overFetched.subList(0, remaining)
-                    : overFetched;
+        OverfetchResult<Session> of = OverfetchResult.slice(overFetched, remaining);
 
-            return new DefaultSessionResult(sessions, hasMore);
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
+        return new DefaultSessionResult(of.items(), of.hasMore());
     }
+
     // 세션별 단어 개수 조회
     private Map<Long, Integer> fetchVocabularyCounts(List<Long> sessionIds) {
-        try {
-            return sessionVocabularyRepository.findCountsBySessionIds(sessionIds)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            SessionVocabularyRepository.SessionIdCount::getSessionId,
-                            r -> (int) r.getCnt()
-                    ));
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
+        return withDb(() ->
+                sessionVocabularyRepository.findCountsBySessionIds(sessionIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                SessionVocabularyRepository.SessionIdCount::getSessionId,
+                                r -> (int) r.getCnt()
+                        ))
+        );
     }
 
     // 사용자의 학습 결과 조회
     private Map<Long, LearningResult> fetchLearningResults(Long userId, List<Long> sessionIds) {
-        if (userId == null) {
-            return Map.of();
-        }
+        if (userId == null) return Map.of();
 
-        try {
-            return learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            lr -> lr.getSession().getId(),
-                            lr -> lr
-                    ));
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
+        return withDb(() ->
+                learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                lr -> lr.getSession().getId(),
+                                lr -> lr
+                        ))
+        );
     }
 
     // 세션 → DTO 변환
@@ -281,19 +239,34 @@ public class LearningListService {
         return new PagingInfo(nextCursor, hasNext);
     }
 
-    /**
-     * 일반 세션 조회 결과
-     */
-    private record DefaultSessionResult(
-            List<Session> sessions,
-            boolean hasMore
-    ) {}
+    private record DefaultSessionResult(List<Session> sessions, boolean hasMore) {}
+    private record PagingInfo(Long nextCursor, boolean hasNext) {}
 
-    /**
-     * 페이징 정보
-     */
-    private record PagingInfo(
-            Long nextCursor,
-            boolean hasNext
-    ) {}
+    // db try/catch 자동 처리
+    private static <T> T withDb(Supplier<T> action) {
+        try {
+            return action.get();
+        } catch (DataAccessException e) {
+            throw new LearningQueryException();
+        }
+    }
+
+    // 빈 리스트를 null로
+    private static <T> List<T> toNullIfEmpty(List<T> list) {
+        return (list == null || list.isEmpty()) ? null : list;
+    }
+
+    // 첫 페이지 요청 객체 생성
+    private static PageRequest firstPage(int size) {
+        return PageRequest.of(0, size);
+    }
+
+    // limit+1개로 다음 페이지 유무 계산
+    private record OverfetchResult<T>(List<T> items, boolean hasMore) {
+        static <T> OverfetchResult<T> slice(List<T> overFetched, int size) {
+            boolean more = overFetched.size() > size;
+            List<T> items = more ? overFetched.subList(0, size) : overFetched;
+            return new OverfetchResult<>(items, more);
+        }
+    }
 }

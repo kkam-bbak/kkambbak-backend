@@ -2,6 +2,8 @@ package com.kkambbak.core.entity.learning;
 
 import com.kkambbak.core.entity.BaseEntity;
 import com.kkambbak.core.entity.survey.enums.CategoryType;
+import com.kkambbak.core.entity.survey.enums.DifficultyLevel;
+import com.kkambbak.core.entity.survey.enums.InterestType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,7 +11,7 @@ import lombok.*;
 @Entity
 @Table(
         name = "survey_top_exposure_rule",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"category_type", "survey_key", "session_id"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"category_type", "difficulty_level", "interest_type", "session_id"})
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -25,8 +27,13 @@ public class SurveyTopExposureRule extends BaseEntity {
     @Column(name = "category_type", nullable = false, length = 20)
     private CategoryType categoryType; // TOPIK / CASUAL
 
-    @Column(name = "survey_key", nullable = false, length = 50)
-    private String surveyKey;          // 예: "BEGINNER", "FOOD_AND_TRAVEL"
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty_level", length = 30)
+    private DifficultyLevel difficultyLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "interest_type", length = 50)
+    private InterestType interestType;
 
     @ManyToOne(fetch=FetchType.LAZY, optional = false)
     @JoinColumn(name = "session_id", nullable = false)

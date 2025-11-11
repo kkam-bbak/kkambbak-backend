@@ -54,10 +54,9 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
         var resp = LearningSessionListResponse.of(CategoryType.TOPIK, sessions, 2L, true);
 
         given(learningListService.getLearningList(
-                eq(1L),                     // KkambbakDocumentApiTester 가짜 유저 ID = 1L
+                eq(1L),
                 eq(CategoryType.TOPIK),
-                eq("INTERMEDIATE"),
-                isNull(),                   // cursor 미지정 → 첫 페이지
+                isNull(),
                 eq(4)
         )).willReturn(resp);
 
@@ -65,7 +64,6 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
                         .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
                         .accept(MediaType.APPLICATION_JSON)
                         .param("category", "TOPIK")
-                        .param("surveyKey", "INTERMEDIATE")
                         .param("limit", "4")
                 )
                 .andExpect(status().isOk())
@@ -77,15 +75,13 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
                                 .tag("Learning")
                                 .summary("학습 목록 조회 - 첫 페이지")
                                 .description("""
-                                카테고리/설문키 기반 학습 세션 목록을 조회합니다.
-                                첫 페이지에서 surveyKey(예: BEGINNER, INTERMEDIATE)가 전달되면
-                                상위 노출 규칙이 먼저 적용된 뒤 기본 목록이 이어집니다.
-                                커서 기반 무한 스크롤을 지원합니다.
+                                    카테고리 기반 학습 세션 목록을 조회합니다.
+                                    상위 노출 규칙이 먼저 적용된 뒤 기본 목록이 이어집니다.
+                                    커서 기반 무한 스크롤을 지원합니다
                                 """)
                                 .requestHeaders(headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰"))
                                 .queryParameters(
                                         parameterWithName("category").description("카테고리 (TOPIK | CASUAL)"),
-                                        parameterWithName("surveyKey").optional().description("설문 키"),
                                         parameterWithName("cursor").optional().description("다음 페이지 커서 (null이면 첫 페이지)"),
                                         parameterWithName("limit").optional().description("페이지 크기 (기본 10, 최대 50)")
                                 )
@@ -110,7 +106,6 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
     @Test
     @DisplayName("학습 목록 조회 — 다음 페이지(커서 사용), hasNext=false")
     void getLearningList_nextPage_docs() throws Exception {
-        // 포스트맨 예시(다음 페이지) 그대로 구성
         var sessions = List.of(
                 card(5, "Topik 5"),
                 card(6, "Topik 6")
@@ -120,7 +115,6 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
         given(learningListService.getLearningList(
                 eq(1L),
                 eq(CategoryType.TOPIK),
-                eq("INTERMEDIATE"),
                 eq(2L),
                 eq(4)
         )).willReturn(resp);
@@ -129,7 +123,6 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
                         .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
                         .accept(MediaType.APPLICATION_JSON)
                         .param("category", "TOPIK")
-                        .param("surveyKey", "INTERMEDIATE")
                         .param("cursor", "2")
                         .param("limit", "4")
                 )
@@ -142,13 +135,12 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
                                 .tag("Learning")
                                 .summary("학습 목록 조회 - 다음 페이지")
                                 .description("""
-                                이전 응답의 nextCursor를 cursor로 넘겨 다음 페이지를 조회합니다.
-                                hasNext=false이면 더 이상 페이지가 없습니다.
+                                    이전 응답의 nextCursor를 cursor로 넘겨 다음 페이지를 조회합니다.
+                                    hasNext=false이면 더 이상 페이지가 없습니다.
                                 """)
                                 .requestHeaders(headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰"))
                                 .queryParameters(
                                         parameterWithName("category").description("카테고리 (TOPIK | CASUAL)"),
-                                        parameterWithName("surveyKey").optional().description("설문 키"),
                                         parameterWithName("cursor").description("이전 응답의 nextCursor"),
                                         parameterWithName("limit").optional().description("페이지 크기 (기본 10, 최대 50)")
                                 )

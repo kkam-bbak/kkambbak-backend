@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 public class SurveyDto {
 
     @Getter
@@ -17,15 +19,8 @@ public class SurveyDto {
     @AllArgsConstructor
     @Builder
     public static class SurveySaveRequest {
-        @NotNull
-        private DifficultyLevel level;
-
-        @NotBlank
-        private String interests;
-
         // 전체 설문 응답
         @NotNull
-        @NotEmpty
-        private String rawResponses;
+        private Map<String, Object> rawResponses;
     }
 }
