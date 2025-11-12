@@ -4,6 +4,7 @@ package com.kkambbak.domain.roleplay.controller;
 import com.kkambbak.domain.roleplay.dto.RoleplayDialoguesResponseDto;
 import com.kkambbak.domain.roleplay.dto.RoleplayEvaluateResponseDto;
 import com.kkambbak.domain.roleplay.dto.RoleplayResponseDto;
+import com.kkambbak.domain.roleplay.dto.RoleplaySessionCompleteDto;
 import com.kkambbak.domain.roleplay.facade.RoleplayFacade;
 import com.kkambbak.domain.roleplay.service.RoleplayService;
 import com.kkambbak.global.response.ApiResponse;
@@ -62,6 +63,16 @@ public class RoleplayController {
             @RequestParam MultipartFile audioFile) throws IOException, ExecutionException, InterruptedException, UnsupportedAudioFileException {
         RoleplayEvaluateResponseDto evaluateResult = roleplayFacade.evaluate(user.getUserId(), sessionId, dialogueId, audioFile);
         return ApiResponse.ok(evaluateResult);
+    }
+
+    //세션 완료 API
+    @PostMapping("/complete")
+    public ApiResponse<RoleplaySessionCompleteDto> complete(
+            @AuthenticationPrincipal UserDetailsImpl user,
+            @RequestParam Long sessionId) {
+        RoleplaySessionCompleteDto roleplaySessionCompleteDto = roleplayFacade.complete(user.getUserId(), sessionId);
+        return ApiResponse.ok(roleplaySessionCompleteDto);
+
     }
 
 

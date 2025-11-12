@@ -24,11 +24,13 @@ import com.kkambbak.domain.roleplay.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -182,6 +184,24 @@ public class RoleplayFacade {
                 .score(feedback.getPronunciationScore())
                 .build();
     }
+
+
+    @Transactional
+    public RoleplaySessionCompleteDto complete(Long userId, Long sessionId) {
+        RoleplaySession roleplaySession = roleplayService.validateSession(userId,sessionId);
+        int attemptCount = roleplayPronunciationFeedbackRepository.countAttemptedDialogues(roleplaySession.getId());
+        int goodCount = roleplayPronunciationFeedbackRepository.countGoodDialogues(roleplaySession.getId());
+
+        roleplaySession.endState();
+        LocalDateTime completed = roleplaySession.getCompletedAt();
+        return RoleplaySessionCompleteDto.builder()
+                .sessionId(sessionId)
+                .totalSentence(attemptCount)
+                .correctSentence(goodCount)
+                .completedAt(completed.toLocalDate())
+                .build();
+    }
+
 
 
 

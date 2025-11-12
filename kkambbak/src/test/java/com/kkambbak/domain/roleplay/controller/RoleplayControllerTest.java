@@ -7,6 +7,7 @@ import com.kkambbak.core.entity.roleplay.enums.SpeakerType;
 import com.kkambbak.domain.roleplay.dto.RoleplayDialoguesResponseDto;
 import com.kkambbak.domain.roleplay.dto.RoleplayEvaluateResponseDto;
 import com.kkambbak.domain.roleplay.dto.RoleplayResponseDto;
+import com.kkambbak.domain.roleplay.dto.RoleplaySessionCompleteDto;
 import com.kkambbak.domain.roleplay.facade.RoleplayFacade;
 import com.kkambbak.domain.roleplay.service.RoleplayService;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
@@ -254,6 +256,47 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                         fieldWithPath("body.feedback").type(JsonFieldType.STRING).description("발음 평가 결과 (GOOD / RETRY / WRONG)")
                                 )
                                 .build()
+                        )
+                ));
+    }
+
+    @Test
+    @DisplayName("Roleplay 세션 완료 API")
+    void completeRoleplaySession() throws Exception {
+        var mockResponse = RoleplaySessionCompleteDto.builder()
+                .sessionId(1L)
+                .totalSentence(6)
+                .correctSentence(5)
+                .completedAt(LocalDate.now())
+                .build();
+
+        given(roleplayFacade.complete(anyLong(), anyLong())).willReturn(mockResponse);
+
+        mockMvc.perform(post("/api/v1/roleplay/complete?sessionId=1")
+                        .param("sessionId", "1")
+                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(document("roleplay-complete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Roleplay")
+                                .summary("Roleplay 세션 완료")
+                                .description("세션을 완료 처리하고 결과 요약을 반환합니다.")
+                                .requestHeaders(
+                                        headerWithName("Authorization").description("Bearer 토큰")
+                                )
+                                .queryParameters(
+                                        parameterWithName("sessionId").description("세션 ID")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                        fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                        fieldWithPath("status.description").type(JsonFieldType.STRING).optional().description("상태 설명"),
+                                        fieldWithPath("body.sessionId").type(JsonFieldType.NUMBER).description("세션 ID"),
+                                        fieldWithPath("body.totalSentence").type(JsonFieldType.NUMBER).description("전체 문장 수"),
+                                        fieldWithPath("body.correctSentence").type(JsonFieldType.NUMBER).description("정답 문장 수"),
+                                        fieldWithPath("body.completedAt").type(JsonFieldType.STRING).description("완료일 (yyyy-MM-dd)")
+                                ).build()
                         )
                 ));
     }
