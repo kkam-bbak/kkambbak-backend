@@ -193,6 +193,8 @@ public class RoleplayFacade {
         int goodCount = roleplayPronunciationFeedbackRepository.countGoodDialogues(roleplaySession.getId());
 
         roleplaySession.endState();
+        roleplayCacheService.clear(roleplaySession.getId());
+
         LocalDateTime completed = roleplaySession.getCompletedAt();
         return RoleplaySessionCompleteDto.builder()
                 .sessionId(sessionId)
