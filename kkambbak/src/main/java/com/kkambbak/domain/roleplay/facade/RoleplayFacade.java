@@ -1,24 +1,36 @@
 package com.kkambbak.domain.roleplay.facade;
 
 
+import com.kkambbak.client.azure.dto.RoleplayPronunciationDto;
+import com.kkambbak.client.azure.service.RoleplayPronunciationService;
 import com.kkambbak.client.openai.dto.ChatMessage;
 import com.kkambbak.core.entity.roleplay.RoleplayDialogues;
+import com.kkambbak.core.entity.roleplay.RoleplayPronunciationFeedback;
 import com.kkambbak.core.entity.roleplay.RoleplayScenario;
 import com.kkambbak.core.entity.roleplay.RoleplaySession;
 import com.kkambbak.core.entity.roleplay.enums.SpeakerType;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.roleplay.RoleplayDialoguesRepository;
+import com.kkambbak.core.repository.roleplay.RoleplayPronunciationFeedbackRepository;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.roleplay.dto.*;
 import com.kkambbak.domain.roleplay.exception.DialogueLimitExceedException;
+import com.kkambbak.domain.roleplay.exception.DialogueNotFoundException;
 import com.kkambbak.domain.roleplay.exception.NoContentInSessionException;
+import com.kkambbak.domain.roleplay.exception.PronunciationLimitExceedException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
 import net.crizin.*;
 import com.kkambbak.domain.roleplay.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @Component
@@ -31,6 +43,9 @@ public class RoleplayFacade {
     private final RoleplayDialoguesRepository roleplayDialoguesRepository;
     private final RoleplayCreditService roleplayCreditService;
     private final UserRepository userRepository;
+    private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
+    private final AudioConvertService audioConvertService;
+    private final RoleplayPronunciationService roleplayPronunciationService;
 
     /**
      * 롤플레이 세션을 시작하고, 첫 GPT 응답을 생성한다.
@@ -133,6 +148,38 @@ public class RoleplayFacade {
                 .mismatchRomanized(roleplayDialogue.getMismatchRomanized())
                 .speaker(roleplayDialogue.getSpeakerType())
                 .coreWord(roleplayDialogue.getCoreWord())
+                .build();
+    }
+
+    /**
+     * 롤플레이 대화의 발음 평가를 수행하고 결과를 반환한다.
+     *
+     * 흐름 정리:
+     * 1. 세션 유효성 검증 및 대상 대화(발음할 문장) 조회
+     * 2. 발음 평가 가능 여부 판단(제한(2번) 초과했는지 여부)
+     * 3. 업로드된 오디오 파일을 WAV 포맷으로 변환
+     * 4. 발음 평가 서비스 호출 (Azure)
+     * 5. 평가 결과를 DB에 저장
+     * 6. 피드백 및 점수를 포함한 응답 DTO 반환
+     */
+    public RoleplayEvaluateResponseDto evaluate(Long userId, Long sessionId, Long dialogueId, MultipartFile audioFile) throws IOException, ExecutionException, InterruptedException, UnsupportedAudioFileException {
+        RoleplaySession roleplaySession = roleplayService.validateSession(userId,sessionId);
+        RoleplayDialogues dialogues = roleplayDialoguesRepository.findById(dialogueId).orElseThrow(
+                DialogueNotFoundException::new);
+
+        //평가 가능 여부 판단 (최대 기회 2번)
+        int attempt = roleplayPronunciationFeedbackRepository.countByRoleplayDialogue_Id(dialogueId);
+        if(attempt>=2){
+            log.warn("Pronunciation feedback has been reached");
+            throw new PronunciationLimitExceedException();
+        }
+        File wavFile = audioConvertService.toWav(audioFile);
+        RoleplayPronunciationDto pronunciationScore = roleplayPronunciationService.getPronunciationScore(dialogues.getKorean(), wavFile);
+        RoleplayPronunciationFeedback feedback = roleplayService.saveRoleplayPronunciationFeedback(userId, dialogues, pronunciationScore);
+        return RoleplayEvaluateResponseDto.builder()
+                .dialogueId(dialogues.getId())
+                .feedback(feedback.getResult())
+                .score(feedback.getPronunciationScore())
                 .build();
     }
 

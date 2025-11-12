@@ -2,15 +2,20 @@ package com.kkambbak.domain.roleplay.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.kkambbak.KkambbakDocumentApiTester;
+import com.kkambbak.core.entity.roleplay.enums.PronunciationResult;
 import com.kkambbak.core.entity.roleplay.enums.SpeakerType;
 import com.kkambbak.domain.roleplay.dto.RoleplayDialoguesResponseDto;
+import com.kkambbak.domain.roleplay.dto.RoleplayEvaluateResponseDto;
 import com.kkambbak.domain.roleplay.dto.RoleplayResponseDto;
 import com.kkambbak.domain.roleplay.facade.RoleplayFacade;
 import com.kkambbak.domain.roleplay.service.RoleplayService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.payload.JsonFieldType;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -194,6 +199,61 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
                                         fieldWithPath("body.coreWord").type(JsonFieldType.STRING).optional().description("힌트 핵심 단어(영어)")
                                 ).build()
+                        )
+                ));
+    }
+
+
+    @Test
+    @DisplayName("Roleplay 발음 평가 API")
+    void evaluatePronunciation() throws Exception {
+        // given
+        var mockResponse = RoleplayEvaluateResponseDto.builder()
+                .dialogueId(2L)
+                .score(87.5)
+                .feedback(PronunciationResult.GOOD)
+                .build();
+
+        given(roleplayFacade.evaluate(anyLong(), anyLong(), anyLong(), any()))
+                .willReturn(mockResponse);
+
+
+        MockMultipartFile audioFile = new MockMultipartFile(
+                "audioFile", "sample.wav",
+                MediaType.MULTIPART_FORM_DATA_VALUE,
+                "dummy audio data".getBytes()
+        );
+
+        // when & then
+        mockMvc.perform(multipart("/api/v1/roleplay/evaluate")
+                        .file(audioFile)
+                        .param("sessionId", "1")
+                        .param("dialogueId", "2")
+                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN))
+                .andExpect(status().isOk())
+                .andDo(document("roleplay-evaluate",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Roleplay")
+                                .summary("발음 평가")
+                                .description("""
+                                    사용자가 업로드한 음성 파일을 기반으로 발음 평가를 수행합니다.
+                                    multipart/form-data 형식으로 요청합니다.
+                                    - `audioFile`: 업로드 음성 파일 (WAV 등)
+                                    - `sessionId`: 세션 ID
+                                    - `dialogueId`: 문장 ID
+                                    """)
+                                .requestHeaders(
+                                        headerWithName("Authorization").description("Bearer 토큰")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                        fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                        fieldWithPath("status.description").type(JsonFieldType.STRING).optional().description("상태 설명"),
+                                        fieldWithPath("body.dialogueId").type(JsonFieldType.NUMBER).description("문장 ID"),
+                                        fieldWithPath("body.score").type(JsonFieldType.NUMBER).description("발음 점수 (0~100 실수형)"),
+                                        fieldWithPath("body.feedback").type(JsonFieldType.STRING).description("발음 평가 결과 (GOOD / RETRY / WRONG)")
+                                )
+                                .build()
                         )
                 ));
     }
