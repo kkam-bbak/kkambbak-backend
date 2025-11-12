@@ -15,6 +15,7 @@ import java.util.List;
 
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -52,6 +53,9 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                         .tag("Roleplay")
                                         .summary("Roleplay Scenarios 리스트 반환")
                                         .description("DB에 저장된 Roleplay Scenarios 리스트가 반환됩니다.")
+                                        .requestHeaders(
+                                                headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                        )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
