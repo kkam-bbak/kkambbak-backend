@@ -18,8 +18,9 @@ public class RoleplayScenario extends BaseEntity {
     @Column(name = "title",length = 255, nullable = false)
     private String title;
 
-    @Column(name="description",columnDefinition = "TEXT")
+    @Column(name="description",columnDefinition = "TEXT", nullable = false)
     private String description;
 
+    @Column(nullable = false)
     private Integer estimated_minutes;
 }

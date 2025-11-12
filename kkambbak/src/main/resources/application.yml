@@ -60,3 +60,13 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+
+
+media:
+  ffmpeg:
+    path: ${MEDIA_FFMPEG_PATH:ffmpeg}
+
+
+
+
+
