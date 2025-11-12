@@ -10,6 +10,8 @@ import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.roleplay.RoleplayDialoguesRepository;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.roleplay.dto.*;
+import com.kkambbak.domain.roleplay.exception.DialogueLimitExceedException;
+import com.kkambbak.domain.roleplay.exception.NoContentInSessionException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
 import net.crizin.*;
 import com.kkambbak.domain.roleplay.service.*;
@@ -64,6 +66,60 @@ public class RoleplayFacade {
         String romanized = KoreanRomanizer.romanize(gptAnswer.getKorean());
         String mismatchRomanized = KoreanRomanizer.romanize(gptAnswer.getMismatchKorean());
         RoleplayDialogues roleplayDialogue = roleplayService.saveRoleplayDialogues(roleplaySession,gptAnswer,romanized,mismatchRomanized,1,SpeakerType.AI,gptAnswer.getCoreWord());
+
+        return RoleplayDialoguesResponseDto.builder()
+                .role(gptAnswer.getSpeaker())
+                .sessionId(roleplaySession.getId())
+                .english(roleplayDialogue.getEnglish())
+                .korean(roleplayDialogue.getKorean())
+                .romanized(roleplayDialogue.getRomanized())
+                .dialogueId(roleplayDialogue.getId())
+                .mismatchKorean(roleplayDialogue.getMismatchKorean())
+                .mismatchEnglish(roleplayDialogue.getMismatchEnglish())
+                .mismatchRomanized(roleplayDialogue.getMismatchRomanized())
+                .speaker(roleplayDialogue.getSpeakerType())
+                .coreWord(roleplayDialogue.getCoreWord())
+                .build();
+    }
+
+    /**
+     * 롤플레이 세션을 이어서 진행하며 GPT 응답을 생성한다.
+     *
+     * 흐름 정리:
+     * 1. 세션 유효성 검증 및 캐시된 대화 이력 조회
+     * 2. 직전 화자 정보를 기반으로 GPT 응답 생성
+     * 3. 캐시 메시지 갱신 및 저장
+     * 4. TTS 오디오 변환 및 로마나이즈 처리
+     * 5. 생성된 대화 내용을 DB에 저장하고 응답 DTO 반환
+     */
+    public RoleplayDialoguesResponseDto next(Long userId,Long sessionId) {
+        RoleplaySession roleplaySession = roleplayService.validateSession(userId,sessionId);
+        int gptTurn = roleplayDialoguesRepository.countByRoleplaySession_IdAndSpeakerType(roleplaySession.getId(), SpeakerType.AI);
+        int userTurn = roleplayDialoguesRepository.countByRoleplaySession_IdAndSpeakerType(roleplaySession.getId(), SpeakerType.USER);
+
+        if(gptTurn>=3&&userTurn>=3){
+            log.warn("Dialogue limit has been reached");
+            throw new DialogueLimitExceedException();
+        }
+
+        List<ChatMessage> messages = roleplayCacheService.getMessages(sessionId);
+        if(messages.isEmpty()){
+            throw new NoContentInSessionException();
+        }
+        RoleplayDialogues lastDialogue = roleplayService.getLastDialogue(sessionId);
+
+        String prevRole = lastDialogue.getRole();
+        RoleplaySentenceDto gptAnswer = roleplayGptService.continueSentence(messages, prevRole);
+        messages.add(new ChatMessage("assistant", gptAnswer.getKorean()));
+        roleplayCacheService.saveMessages(sessionId,messages);
+
+
+        String romanized = KoreanRomanizer.romanize(gptAnswer.getKorean());
+        String mismatchRomanized = KoreanRomanizer.romanize(gptAnswer.getMismatchKorean());
+
+        int nextIndex = roleplayService.getNextIndex(roleplaySession.getId());
+        SpeakerType nextSpeakerType = (lastDialogue.getSpeakerType()==SpeakerType.AI) ? SpeakerType.USER:SpeakerType.AI ;
+        RoleplayDialogues roleplayDialogue = roleplayService.saveRoleplayDialogues(roleplaySession, gptAnswer, romanized,mismatchRomanized,nextIndex, nextSpeakerType,gptAnswer.getCoreWord());
 
         return RoleplayDialoguesResponseDto.builder()
                 .role(gptAnswer.getSpeaker())

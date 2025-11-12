@@ -38,5 +38,15 @@ public class RoleplayController {
         return ApiResponse.ok(response);
     }
 
+    //다음 문장 API
+    @PostMapping("/next")
+    public ApiResponse<RoleplayDialoguesResponseDto> next(
+            @AuthenticationPrincipal UserDetailsImpl user,
+            @RequestParam Long sessionId) {
+        RoleplayDialoguesResponseDto response = roleplayFacade.next(user.getUserId(), sessionId);
+        return ApiResponse.ok(response);
+
+    }
+
 
 }

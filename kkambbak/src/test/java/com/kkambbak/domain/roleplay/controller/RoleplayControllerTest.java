@@ -83,7 +83,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
         var mockResponse = RoleplayDialoguesResponseDto.builder()
                 .sessionId(1L)
                 .dialogueId(1L)
-                .role("AI")
+                .role("staff")
                 .speaker(SpeakerType.AI)
                 .english("Hello! What would you like to order?")
                 .korean("안녕하세요! 무엇을 주문하시겠어요?")
@@ -129,7 +129,70 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                         fieldWithPath("body.mismatchRomanized").type(JsonFieldType.STRING).optional().description("틀린 로마자 표기"),
                                         fieldWithPath("body.mismatchEnglish").type(JsonFieldType.STRING).optional().description("틀린 영문 문장"),
 
-                                        fieldWithPath("body.coreWord").type(JsonFieldType.STRING).optional().description("핵심 단어")
+                                        fieldWithPath("body.coreWord").type(JsonFieldType.STRING).optional().description("힌트 핵심 단어(영어)")
+                                ).build()
+                        )
+                ));
+    }
+
+    @Test
+    @DisplayName("Roleplay 다음 문장 생성 API")
+    void nextRoleplayDialogue() throws Exception {
+        // given
+        var mockResponse = RoleplayDialoguesResponseDto.builder()
+                .sessionId(1L)
+                .dialogueId(7L)
+                .role("customer")
+                .speaker(SpeakerType.USER)
+                .english("One Americano, please.")
+                .korean("아메리카노 한 잔 주세요.")
+                .romanized("Amerikano han jan juseyo.")
+                .mismatchKorean("졸려요.")
+                .mismatchEnglish("I'm sleepy.")
+                .mismatchRomanized("naneun jollyeoyo")
+                .coreWord("Americano")
+                .build();
+
+        given(roleplayFacade.next(anyLong(), anyLong())).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/roleplay/next?sessionId=1")
+                        .param("sessionId", "1")
+                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(document("roleplay-next",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Roleplay")
+                                .summary("다음 문장 생성")
+                                .description("""
+                                    현재 세션의 맥락에 맞는 다음 문장을 반환합니다.
+                                    speaker가 USER일 경우, mismatch 문장을 카드섹션에 활용합니다.
+                                    """)
+                                .requestHeaders(
+                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                )
+                                .queryParameters(
+                                        parameterWithName("sessionId").description("세션 ID")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                        fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                        fieldWithPath("status.description").type(JsonFieldType.STRING).optional().description("상태 설명"),
+
+                                        fieldWithPath("body.sessionId").type(JsonFieldType.NUMBER).description("세션 ID"),
+                                        fieldWithPath("body.dialogueId").type(JsonFieldType.NUMBER).description("문장 ID"),
+                                        fieldWithPath("body.korean").type(JsonFieldType.STRING).description("한국어 문장"),
+                                        fieldWithPath("body.romanized").type(JsonFieldType.STRING).description("로마자 표기"),
+                                        fieldWithPath("body.english").type(JsonFieldType.STRING).description("영문 문장"),
+                                        fieldWithPath("body.speaker").type(JsonFieldType.STRING).description("화자 타입 (AI/USER)"),
+                                        fieldWithPath("body.role").type(JsonFieldType.STRING).description("화자 역할"),
+
+                                        fieldWithPath("body.mismatchKorean").type(JsonFieldType.STRING).optional().description("틀린 한국어 문장"),
+                                        fieldWithPath("body.mismatchRomanized").type(JsonFieldType.STRING).optional().description("틀린 로마자 표기"),
+                                        fieldWithPath("body.mismatchEnglish").type(JsonFieldType.STRING).optional().description("틀린 영문 문장"),
+
+                                        fieldWithPath("body.coreWord").type(JsonFieldType.STRING).optional().description("힌트 핵심 단어(영어)")
                                 ).build()
                         )
                 ));
