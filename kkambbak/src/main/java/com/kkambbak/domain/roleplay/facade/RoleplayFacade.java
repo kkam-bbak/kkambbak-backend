@@ -106,7 +106,7 @@ public class RoleplayFacade {
      * 1. 세션 유효성 검증 및 캐시된 대화 이력 조회
      * 2. 직전 화자 정보를 기반으로 GPT 응답 생성
      * 3. 캐시 메시지 갱신 및 저장
-     * 4. TTS 오디오 변환 및 로마나이즈 처리
+     * 4. GPT가 응답한 문장 로마나이즈 처리
      * 5. 생성된 대화 내용을 DB에 저장하고 응답 DTO 반환
      */
     public RoleplayDialoguesResponseDto next(Long userId,Long sessionId) {
