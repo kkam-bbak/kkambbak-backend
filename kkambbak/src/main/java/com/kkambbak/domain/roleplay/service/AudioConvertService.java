@@ -27,32 +27,37 @@ public class AudioConvertService {
         File in = null;
         File out = null;
 
-        try{
+        try {
             in = File.createTempFile("in-", "-" + Objects.requireNonNullElse(file.getOriginalFilename(), "audio"));
             out = File.createTempFile("out-", ".wav");
             file.transferTo(in);
+
             FFmpeg fFmpeg = new FFmpeg(ffmpegPath);
             FFmpegBuilder builder = new FFmpegBuilder()
                     .setInput(in.getAbsolutePath())
                     .overrideOutputFiles(true)
                     .addOutput(out.getAbsolutePath())
-                        .setFormat("wav")
-                        .setAudioCodec("pcm_s16le")
-                        .setAudioChannels(1)
-                        .setAudioSampleRate(16_000)
-                        .done();
+                    .setFormat("wav")
+                    .setAudioCodec("pcm_s16le")
+                    .setAudioChannels(1)
+                    .setAudioSampleRate(16000)
+                    .done();
 
             new FFmpegExecutor(fFmpeg).createJob(builder).run();
+
             return out;
 
-        }catch (Exception e){
-            log.error("Fail to convert audio file to .wav");
-            if(out!=null) safeDelete(out);
+        } catch (Exception e) {
+            log.error("Fail to convert audio file to .wav", e);
+            if (out != null) safeDelete(out);
+
             throw new FFmpegConvertFailException();
-        }finally {
-            if(in!=null) safeDelete(in);
+
+        } finally {
+            if (in != null) safeDelete(in);
         }
     }
+
 
     private void safeDelete(File file) {
         try {
