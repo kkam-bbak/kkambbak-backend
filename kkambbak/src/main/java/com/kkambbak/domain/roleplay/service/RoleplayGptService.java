@@ -29,7 +29,7 @@ public class RoleplayGptService {
                 new ChatMessage("system", prompt),
                 new ChatMessage("user", "Let's start the roleplay.")
         );
-        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini",true);
+        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini");
         String content = response.getChoices().get(0).getMessage().getContent();
         return parseSentenceResponse(content);
     }
@@ -49,7 +49,7 @@ public class RoleplayGptService {
         No explanations or markdown.
         """.formatted(prevRole);
         messages.add(new ChatMessage("user", userPrompt));
-        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini",true);
+        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini");
         String content = response.getChoices().get(0).getMessage().getContent();
         return parseSentenceResponse(content);
     }

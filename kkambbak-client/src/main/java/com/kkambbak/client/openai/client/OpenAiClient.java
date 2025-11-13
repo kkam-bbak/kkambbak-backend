@@ -2,77 +2,57 @@ package com.kkambbak.client.openai.client;
 
 import com.kkambbak.client.openai.dto.ChatMessage;
 import com.kkambbak.client.openai.dto.ChatResponseDto;
+import com.kkambbak.client.openai.enums.OpenAiErrorCode;
+import com.kkambbak.client.openai.exception.OpenAiException;
+import com.kkambbak.client.openai.service.OpenAiSchemaFactory;
+import com.kkambbak.client.openai.service.OpenAiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
-import java.io.File;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
-@Component
+@Service
+@RequiredArgsConstructor
 public class OpenAiClient {
+    private final OpenAiSchemaFactory openAiSchemaFactory;
+    private final OpenAiService openAiService;
+    private static final double DEFAULT_TEMPERATURE = 0.8;
 
-    private final WebClient openAiWebClient;
 
-    private static final double DEFAULT_TEMPERATURE = 1.0;
-
-    public OpenAiClient(@Qualifier("openAiWebClient") WebClient openAiWebClient) {
-        this.openAiWebClient = openAiWebClient;
+    //롤플레이
+    public ChatResponseDto getRoleplaySentence(List<ChatMessage> messages, String model) {
+        Map<String, Object> body = buildRequestBody(model, messages, openAiSchemaFactory.roleplaySchema());
+        return openAiService.postToChat(body);
     }
 
-    public ChatResponseDto getRoleplaySentence(List<ChatMessage> messages, String model, boolean jsonForce) {
-        Map<String,Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", DEFAULT_TEMPERATURE);
 
-        if (jsonForce) {
-            Map<String, Object> schema = Map.of(
-                    "name", "RoleplayLine",
-                    "strict", false,
-                    "schema", Map.of(
-                            "type", "object",
-                            "properties", Map.of(
-                                    "korean", Map.of("type","string"),
-                                    "english", Map.of("type","string"),
-                                    "speaker", Map.of("type","string"),
-                                    "mismatchKorean", Map.of("type","string"),
-                                    "mismatchEnglish", Map.of("type","string"),
-                                    "coreWord", Map.of("type","string")
-                            ),
-                            "required", List.of("korean","english","speaker","mismatchKorean","mismatchEnglish","coreWord"),
-                            "additionalProperties", false
-                    )
-            );
-            requestBody.put("response_format", Map.of(
-                    "type", "json_schema",
-                    "json_schema", schema
-            ));
-        }
 
-        ChatResponseDto response = openAiWebClient.post()
-                .uri("/chat/completions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(ChatResponseDto.class)
-                .doOnNext(res -> {
-                    if(res.getChoices()!=null && !res.getChoices().isEmpty()){
-                        log.info("[OpenAI 응답 완료] message={}",
-                                res.getChoices().get(0).getMessage().getContent());
-                    }
-                })
-                .block();
-
-        return response;
+    //공통
+    private Map<String, Object> buildRequestBody(String model, List<ChatMessage> messages, Map<String, Object> schema) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", model);
+        body.put("messages", messages);
+        body.put("temperature", DEFAULT_TEMPERATURE);
+        body.put("response_format", Map.of(
+                "type", "json_schema",
+                "json_schema", schema
+        ));
+        return body;
     }
+
+
 
 }

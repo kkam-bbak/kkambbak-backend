@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Objects;
 
 @Slf4j
@@ -23,11 +24,13 @@ public class AudioConvertService {
     private String ffmpegPath;
 
     public File toWav(MultipartFile file) throws IOException {
-        File in = File.createTempFile("in-", "-" + Objects.requireNonNullElse(file.getOriginalFilename(), "audio"));
-        File out = File.createTempFile("out-", ".wav");
-        file.transferTo(in);
+        File in = null;
+        File out = null;
 
         try{
+            in = File.createTempFile("in-", "-" + Objects.requireNonNullElse(file.getOriginalFilename(), "audio"));
+            out = File.createTempFile("out-", ".wav");
+            file.transferTo(in);
             FFmpeg fFmpeg = new FFmpeg(ffmpegPath);
             FFmpegBuilder builder = new FFmpegBuilder()
                     .setInput(in.getAbsolutePath())
@@ -41,12 +44,23 @@ public class AudioConvertService {
 
             new FFmpegExecutor(fFmpeg).createJob(builder).run();
             return out;
+
         }catch (Exception e){
-            out.delete();
             log.error("Fail to convert audio file to .wav");
+            if(out!=null) safeDelete(out);
             throw new FFmegConvertFailException();
         }finally {
-            in.delete();
+            if(in!=null) safeDelete(in);
+        }
+    }
+
+    private void safeDelete(File file) {
+        try {
+            if (file != null && file.exists()) {
+                Files.deleteIfExists(file.toPath());
+            }
+        } catch (IOException ex) {
+            log.warn("Failed to delete temp file: {}", file.getAbsolutePath());
         }
     }
 

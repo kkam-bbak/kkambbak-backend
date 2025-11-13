@@ -56,6 +56,10 @@ kakao:
 openai:
   api:
     key: ${OPENAI_API_KEY:}
+  timeout:
+    connect-ms: 5000
+    read-s: 60
+    write-s: 10
 
 
 azure:
