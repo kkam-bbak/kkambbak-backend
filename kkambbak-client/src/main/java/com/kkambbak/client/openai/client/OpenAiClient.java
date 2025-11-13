@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 public class OpenAiClient {
     private final OpenAiSchemaFactory openAiSchemaFactory;
     private final OpenAiService openAiService;
-    private static final double DEFAULT_TEMPERATURE = 0.8;
+    private static final double DEFAULT_TEMPERATURE = 0.7;
 
 
     //롤플레이
@@ -37,7 +37,6 @@ public class OpenAiClient {
         Map<String, Object> body = buildRequestBody(model, messages, openAiSchemaFactory.roleplaySchema());
         return openAiService.postToChat(body);
     }
-
 
 
     //공통

@@ -72,6 +72,7 @@ public class RoleplayService {
     }
 
 
+
     @Transactional(readOnly = true)
     public RoleplaySession validateSession(Long userId, Long sessionId) {
         RoleplaySession session = roleplaySessionRepository.findById(sessionId).orElseThrow(

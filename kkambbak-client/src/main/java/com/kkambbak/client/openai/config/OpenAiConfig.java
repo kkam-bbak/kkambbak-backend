@@ -27,6 +27,9 @@ public class OpenAiConfig {
     @Value("${openai.timeout.write-s:10}")
     private int writeTimeoutS;
 
+    @Value("${openai.api.base-url}")
+    private String baseUrl;
+
     @Bean("openAiWebClient")
     public WebClient openAiWebClient(WebClient.Builder builder) {
         HttpClient httpClient = HttpClient.create()
@@ -38,7 +41,7 @@ public class OpenAiConfig {
                 );
 
         return builder
-                .baseUrl("https://api.openai.com/v1")
+                .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + openAiKey)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();

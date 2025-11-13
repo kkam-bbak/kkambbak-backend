@@ -1,15 +1,14 @@
-package com.kkambbak.domain.roleplay.service;
+package com.kkambbak.client.openai.templates;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class PromptTemplateService {
+@Component
+public class OpenAiTemplate {
 
-    public String buildRoleplayPrompt(String scenarioTitle) {
+    /**
+     * 롤플레이 시작 시 사용할 GPT 프롬프트
+     */
+    public String buildRoleplayStartPrompt(String scenarioTitle) {
         return """
         You are a Korean conversation teacher helping learners practice realistic two-person roleplays.
         Each roleplay involves two polite Korean speakers (A and B) appropriate for the given scenario.
@@ -47,5 +46,25 @@ public class PromptTemplateService {
         - Maintain continuity with the previous conversation if context exists.
         """.formatted(scenarioTitle);
     }
+
+    /**
+     * 롤플레이 진행 중 다음 문장 생성용 GPT 프롬프트
+     */
+    public String buildRoleplayNextPrompt(String prevRole) {
+        return """
+        Continue the Korean roleplay based on the previous conversation history and scenario.
+        The next line should:
+        - Be spoken naturally by the other person (not %s)
+        - Match the tone, topic, and politeness level of the previous exchange
+        - Keep both sentences concise and natural spoken Korean
+        - Include a contextually mismatched but grammatically correct alternative
+        
+        Output exactly one JSON object with:
+        {korean, english, speaker, mismatchKorean, mismatchEnglish, coreWord}
+        No explanations or markdown.
+        """.formatted(prevRole);
+    }
+
+
 
 }

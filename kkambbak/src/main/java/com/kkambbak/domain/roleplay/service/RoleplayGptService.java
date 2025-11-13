@@ -35,20 +35,8 @@ public class RoleplayGptService {
     }
 
     //롤플레이 이어서 진행할 시
-    public RoleplaySentenceDto continueSentence(List<ChatMessage> messages,String prevRole){
-        String userPrompt = """
-        Continue the Korean roleplay based on the previous conversation history and scenario.
-        The next line should:
-        - Be spoken naturally by the other person (not %s)
-        - Match the tone, topic, and politeness level of the previous exchange
-        - Keep both sentences concise and natural spoken Korean
-        - Include a contextually mismatched but grammatically correct alternative
-        
-        Output exactly one JSON object with:
-        {korean, english, speaker, mismatchKorean, mismatchEnglish, coreWord}
-        No explanations or markdown.
-        """.formatted(prevRole);
-        messages.add(new ChatMessage("user", userPrompt));
+    public RoleplaySentenceDto continueSentence(List<ChatMessage> messages,String prevRole,String prompt){
+        messages.add(new ChatMessage("user", prompt));
         ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini");
         String content = response.getChoices().get(0).getMessage().getContent();
         return parseSentenceResponse(content);

@@ -55,7 +55,9 @@ kakao:
 
 openai:
   api:
+    base-url: ${OPENAI_API_BASE_URL:https://api.openai.com/v1}
     key: ${OPENAI_API_KEY:}
+
   timeout:
     connect-ms: 5000
     read-s: 60

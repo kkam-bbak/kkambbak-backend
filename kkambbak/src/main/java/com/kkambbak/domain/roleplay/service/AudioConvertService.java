@@ -1,6 +1,6 @@
 package com.kkambbak.domain.roleplay.service;
 
-import com.kkambbak.domain.roleplay.exception.FFmegConvertFailException;
+import com.kkambbak.domain.roleplay.exception.FFmpegConvertFailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFmpeg;
@@ -48,7 +48,7 @@ public class AudioConvertService {
         }catch (Exception e){
             log.error("Fail to convert audio file to .wav");
             if(out!=null) safeDelete(out);
-            throw new FFmegConvertFailException();
+            throw new FFmpegConvertFailException();
         }finally {
             if(in!=null) safeDelete(in);
         }

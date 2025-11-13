@@ -15,7 +15,7 @@ public enum RoleplayErrorCode implements ResponseCode {
     ROLEPLAY_SESSION_NOT_FOUND("R006", "Roleplay Session not found"),
     ROLEPLAY_SESSION_AND_USER_ARE_NOT_SAME("R007", "Session and User are not same"),
     ROLEPLAY_SESSION_INCONSISTENT_WITH_REQUEST("R0008","Session inconsistent with request"),
-    ROLEPLAY_AUDIO_FFMEG_CONVERT_FAIL("R009","Fail to convert audio file to .wav"),
+    ROLEPLAY_AUDIO_FFMPEG_CONVERT_FAIL("R009","Fail to convert audio file to .wav"),
     ROLEPLAY_CREDIT_LIMIT_STANDARD("R010", "Credit limit standard"),
     ROLEPLAY_CREDIT_LIMIT_PREMIUM("R011", "Credit limit premium"),
     ROLEPLAY_TTS_UPLOAD_FAILED("R012", "TTS Upload Failed"),
