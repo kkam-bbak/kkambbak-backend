@@ -36,6 +36,8 @@ public class RoleplayService {
     private final UserRepository userRepository;
     private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
 
+    private static final double PRONUNCIATION_PASS_THRESHOLD = 70.0;
+
     @Transactional(readOnly = true)
     public List<RoleplayResponseDto> getAllRoleplayScenarios() {
         return roleplayScenariosRepository.findAll()
@@ -114,7 +116,7 @@ public class RoleplayService {
                     return new UserNotFoundException();
                 });
         double score = pronunciationScore.getPronunciationScore(); //PronunciationScore는 Accuracy, Completeness 등 고려한 종합 점수
-        PronunciationResult pronunciationResult = score < 70.0 ? PronunciationResult.RETRY : PronunciationResult.GOOD;
+        PronunciationResult pronunciationResult = score < PRONUNCIATION_PASS_THRESHOLD ? PronunciationResult.RETRY : PronunciationResult.GOOD;
         RoleplayPronunciationFeedback feedback = RoleplayPronunciationFeedback.create(
                 dialogues,
                 user,

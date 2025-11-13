@@ -1,9 +1,9 @@
-package com.kkambbak.client.openai.templates;
+package com.kkambbak.client.openai.prompts;
 
 import org.springframework.stereotype.Component;
 
 @Component
-public class OpenAiTemplate {
+public class OpenAiPromptTemplate {
 
     /**
      * 롤플레이 시작 시 사용할 GPT 프롬프트

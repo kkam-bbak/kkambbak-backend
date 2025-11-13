@@ -23,6 +23,12 @@ public class AudioConvertService {
     @Value("${media.ffmpeg.path:ffmpeg}")
     private String ffmpegPath;
 
+    private static final String OUTPUT_FORMAT = "wav";
+    private static final String AUDIO_CODEC = "pcm_s16le";
+    private static final int AUDIO_CHANNELS = 1; // 모노
+    private static final int SAMPLE_RATE = 16000; // 16kHz
+
+
     public File toWav(MultipartFile file) throws IOException {
         File in = null;
         File out = null;
@@ -37,10 +43,10 @@ public class AudioConvertService {
                     .setInput(in.getAbsolutePath())
                     .overrideOutputFiles(true)
                     .addOutput(out.getAbsolutePath())
-                    .setFormat("wav")
-                    .setAudioCodec("pcm_s16le")
-                    .setAudioChannels(1)
-                    .setAudioSampleRate(16000)
+                    .setFormat(OUTPUT_FORMAT)
+                    .setAudioCodec(AUDIO_CODEC)
+                    .setAudioChannels(AUDIO_CHANNELS)
+                    .setAudioSampleRate(SAMPLE_RATE)
                     .done();
 
             new FFmpegExecutor(fFmpeg).createJob(builder).run();

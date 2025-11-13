@@ -1,4 +1,4 @@
-package com.kkambbak.client.openai.service;
+package com.kkambbak.client.openai.schema;
 
 
 import org.springframework.stereotype.Component;

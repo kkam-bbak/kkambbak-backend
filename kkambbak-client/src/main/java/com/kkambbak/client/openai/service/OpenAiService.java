@@ -3,14 +3,13 @@ package com.kkambbak.client.openai.service;
 import com.kkambbak.client.openai.dto.ChatResponseDto;
 import com.kkambbak.client.openai.enums.OpenAiErrorCode;
 import com.kkambbak.client.openai.exception.OpenAiException;
+import com.kkambbak.client.openai.schema.OpenAiSchemaFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -20,7 +19,10 @@ import java.util.concurrent.TimeoutException;
 @RequiredArgsConstructor
 public class OpenAiService {
     private final WebClient openAiWebClient;
+    private final OpenAiErrorParser openAiErrorParser;
+
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static final String CHAT_COMPLETIONS_ENDPOINT = "/chat/completions";
 
     /**
      * 모든 OpenAI API의 공통 POST 호출
@@ -28,13 +30,10 @@ public class OpenAiService {
     public ChatResponseDto postToChat(Object body){
         try{
             return openAiWebClient.post()
-                    .uri("/chat/completions")
+                    .uri(CHAT_COMPLETIONS_ENDPOINT)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, clientResponse ->
-                            Mono.error(new OpenAiException(OpenAiErrorCode.OPEN_AI_SERVER_ERROR))
-                    )
                     .bodyToMono(ChatResponseDto.class)
                     .doOnNext(res -> {
                         if(res.getChoices()!=null && !res.getChoices().isEmpty()){
@@ -52,7 +51,7 @@ public class OpenAiService {
             if (e instanceof WebClientResponseException webEx) {
                 log.error("[OpenAI API Error] status={}, body={}",
                         webEx.getStatusCode(), webEx.getResponseBodyAsString());
-                throw new OpenAiException(OpenAiErrorCode.OPEN_AI_INVALID_RESPONSE_ERROR);
+                throw openAiErrorParser.parse(webEx);
             }
             log.error("[OpenAI Unexpected Error] type={}, message={}", e.getClass().getSimpleName(), e.getMessage(), e);
             throw new OpenAiException(OpenAiErrorCode.OPEN_AI_UNKNOWN_ERROR);

@@ -4,7 +4,7 @@ package com.kkambbak.domain.roleplay.facade;
 import com.kkambbak.client.azure.dto.RoleplayPronunciationDto;
 import com.kkambbak.client.azure.service.RoleplayPronunciationService;
 import com.kkambbak.client.openai.dto.ChatMessage;
-import com.kkambbak.client.openai.templates.OpenAiTemplate;
+import com.kkambbak.client.openai.prompts.OpenAiPromptTemplate;
 import com.kkambbak.core.entity.roleplay.RoleplayDialogues;
 import com.kkambbak.core.entity.roleplay.RoleplayPronunciationFeedback;
 import com.kkambbak.core.entity.roleplay.RoleplayScenario;
@@ -44,11 +44,18 @@ public class RoleplayFacade {
     private final RoleplayCacheService roleplayCacheService;
     private final RoleplayDialoguesRepository roleplayDialoguesRepository;
     private final RoleplayCreditService roleplayCreditService;
-    private final OpenAiTemplate openAiTemplate;
+    private final OpenAiPromptTemplate openAiPromptTemplate;
     private final UserRepository userRepository;
     private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
     private final AudioConvertService audioConvertService;
     private final RoleplayPronunciationService roleplayPronunciationService;
+
+    private static final int MAX_TURN_PER_SPEAKER = 3;
+    private static final int MAX_PRONUNCIATION_ATTEMPTS = 2;
+    private static final int FIRST_TURN_INDEX = 1;
+
+    private static final String ROLE_SYSTEM = "system";
+    private static final String ROLE_ASSISTANT = "assistant";
 
     /**
      * 롤플레이 세션을 시작하고, 첫 GPT 응답을 생성한다.
@@ -72,19 +79,19 @@ public class RoleplayFacade {
         RoleplayScenario scenario = roleplayService.findRoleplayScenarioById(scenarioId);
         RoleplaySession roleplaySession = roleplayService.saveRoleplaySession(user, scenario);
 
-        String prompt = openAiTemplate.buildRoleplayStartPrompt(roleplaySession.getScenario().getTitle());
+        String prompt = openAiPromptTemplate.buildRoleplayStartPrompt(roleplaySession.getScenario().getTitle());
 
         RoleplaySentenceDto gptAnswer = roleplayGptService.getFirstSentence(prompt);
         List<ChatMessage> initMessages = List.of(
-                new ChatMessage("system", prompt),
-                new ChatMessage("assistant", gptAnswer.getKorean())
+                new ChatMessage(ROLE_SYSTEM, prompt),
+                new ChatMessage(ROLE_ASSISTANT, gptAnswer.getKorean())
         );
         roleplayCacheService.saveMessages(roleplaySession.getId(),initMessages);
 
 
         String romanized = KoreanRomanizer.romanize(gptAnswer.getKorean());
         String mismatchRomanized = KoreanRomanizer.romanize(gptAnswer.getMismatchKorean());
-        RoleplayDialogues roleplayDialogue = roleplayService.saveRoleplayDialogues(roleplaySession,gptAnswer,romanized,mismatchRomanized,1,SpeakerType.AI,gptAnswer.getCoreWord());
+        RoleplayDialogues roleplayDialogue = roleplayService.saveRoleplayDialogues(roleplaySession,gptAnswer,romanized,mismatchRomanized,FIRST_TURN_INDEX,SpeakerType.AI,gptAnswer.getCoreWord());
 
         return RoleplayDialoguesResponseDto.builder()
                 .role(gptAnswer.getSpeaker())
@@ -116,7 +123,7 @@ public class RoleplayFacade {
         int gptTurn = roleplayDialoguesRepository.countByRoleplaySession_IdAndSpeakerType(roleplaySession.getId(), SpeakerType.AI);
         int userTurn = roleplayDialoguesRepository.countByRoleplaySession_IdAndSpeakerType(roleplaySession.getId(), SpeakerType.USER);
 
-        if(gptTurn>=3&&userTurn>=3){
+        if(gptTurn>=MAX_TURN_PER_SPEAKER&&userTurn>=MAX_TURN_PER_SPEAKER){
             log.warn("Dialogue limit has been reached");
             throw new DialogueLimitExceedException();
         }
@@ -128,9 +135,9 @@ public class RoleplayFacade {
         RoleplayDialogues lastDialogue = roleplayService.getLastDialogue(sessionId);
 
         String prevRole = lastDialogue.getRole();
-        String prompt = openAiTemplate.buildRoleplayNextPrompt(prevRole);
+        String prompt = openAiPromptTemplate.buildRoleplayNextPrompt(prevRole);
         RoleplaySentenceDto gptAnswer = roleplayGptService.continueSentence(messages, prevRole,prompt);
-        messages.add(new ChatMessage("assistant", gptAnswer.getKorean()));
+        messages.add(new ChatMessage(ROLE_ASSISTANT, gptAnswer.getKorean()));
         roleplayCacheService.saveMessages(sessionId,messages);
 
 
@@ -174,7 +181,7 @@ public class RoleplayFacade {
 
         //평가 가능 여부 판단 (최대 기회 2번)
         int attempt = roleplayPronunciationFeedbackRepository.countByRoleplayDialogue_Id(dialogueId);
-        if(attempt>=2){
+        if(attempt>=MAX_PRONUNCIATION_ATTEMPTS){
             log.warn("Pronunciation feedback has been reached");
             throw new PronunciationLimitExceedException();
         }
