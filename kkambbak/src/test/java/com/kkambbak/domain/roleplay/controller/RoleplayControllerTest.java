@@ -112,7 +112,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Roleplay")
                                 .summary("Roleplay 세션 시작")
-                                .description("선택한 시나리오로 Roleplay 세션을 시작하고 AI의 첫 문장를 반환합니다.")
+                                .description("선택한 시나리오로 Roleplay 세션을 시작하고 AI의 첫 문장을 반환합니다.")
                                 .requestHeaders(
                                         headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
                                 )

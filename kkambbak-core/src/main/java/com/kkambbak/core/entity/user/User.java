@@ -117,9 +117,6 @@ public class User extends BaseEntity {
 
     //롤플레이 월 사용 횟수 증가
     public void incrementUsage() {
-        if (this.roleplayCount == null) {
-            this.roleplayCount = 0;
-        }
         this.roleplayCount += 1;
     }
 

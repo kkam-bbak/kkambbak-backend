@@ -2,7 +2,10 @@
 FROM eclipse-temurin:21-jre-jammy AS api
 
 #FFMPEG 설치
-RUN apt-get update && apt-get install -y ffmpeg && apt-get clean
+RUN apt-get update && \
+      apt-get install -y ffmpeg && \
+      apt-get clean && \
+      rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

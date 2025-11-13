@@ -9,9 +9,6 @@ dependencies {
 	// AWS S3 SDK for Cloudflare R2
 	implementation 'software.amazon.awssdk:s3:2.25.0'
 
-    //openai
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
     //azure
     implementation group: 'com.microsoft.cognitiveservices.speech', name: 'client-sdk', version: "1.36.0", ext: "jar"
     implementation 'io.github.java-diff-utils:java-diff-utils:4.12'
