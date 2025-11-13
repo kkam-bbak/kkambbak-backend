@@ -18,4 +18,9 @@ public enum UploadErrorCode implements ResponseCode {
 
     private final String statusCode;
     private final String message;
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
 }
