@@ -1,0 +1,47 @@
+package com.kkambbak.domain.learning.dto;
+
+import com.kkambbak.core.entity.learning.Session;
+import com.kkambbak.core.entity.learning.LearningResult;
+import lombok.*;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SessionCardDto {
+
+    private static final int DEFAULT_DURATION_SECONDS = 120;
+
+    private Long id;                 // 세션 고유 ID
+    private String title;            // ex. Topik 1, Emotions
+    private String categoryName;     // ex. TOPIK, CASUAL
+    private int vocabularyCount;     // session_vocabularies 기준 단어 수
+    private boolean completed;       // 학습 완료 여부
+    private int durationSeconds;     // 학습 소요 시간(초)
+
+    // 사용자가 한 번도 학습하지 않은 세션
+    public static SessionCardDto from(Session session, int vocabCount) {
+        return SessionCardDto.builder()
+                .id(session.getId())
+                .title(session.getTitle())
+                .categoryName(session.getCategory().getType().name())
+                .vocabularyCount(vocabCount)
+                .completed(false)
+                .durationSeconds(DEFAULT_DURATION_SECONDS)
+                .build();
+    }
+
+    // 사용자가 이 세션을 이미 학습한 적이 있는 세션
+    public static SessionCardDto of(Session session, LearningResult result, int vocabCount) {
+        return SessionCardDto.builder()
+                .id(session.getId())
+                .title(session.getTitle())
+                .categoryName(session.getCategory().getType().name())
+                .vocabularyCount(vocabCount)
+                .completed(result != null)
+                .durationSeconds(result != null && result.getDurationSeconds() != null
+                        ? result.getDurationSeconds()
+                        : DEFAULT_DURATION_SECONDS)
+                .build();
+    }
+}
