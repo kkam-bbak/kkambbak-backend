@@ -93,7 +93,7 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         resource(builder()
-                                .tag("Survey")
+                                .tag("Surveys")
                                 .summary("설문 완료 여부 확인")
                                 .description("로그인 사용자가 설문을 완료했는지 여부를 반환합니다.")
                                 .requestHeaders(
@@ -122,7 +122,7 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
                         resource(builder()
-                                .tag("Survey")
+                                .tag("Surveys")
                                 .summary("설문 완료 여부 확인(비로그인)")
                                 .description("비로그인 사용자가 호출 시, completed=false를 반환합니다.")
                                 .responseFields(

@@ -73,7 +73,7 @@ class LearningListControllerTest extends KkambbakDocumentApiTester {
                         preprocessResponse(prettyPrint()),
                         resource(builder()
                                 .tag("Learning")
-                                .summary("학습 목록 조회 - 첫 페이지")
+                                .summary("학습 목록 조회")
                                 .description("""
                                     카테고리 기반 학습 세션 목록을 조회합니다.
                                     상위 노출 규칙이 먼저 적용된 뒤 기본 목록이 이어집니다.

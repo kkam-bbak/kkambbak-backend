@@ -7,10 +7,12 @@ import com.kkambbak.core.entity.survey.enums.DifficultyLevel;
 import com.kkambbak.core.entity.survey.enums.InterestType;
 import com.kkambbak.core.repository.survey.SurveyRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SurveyPrefResolver {
@@ -18,7 +20,7 @@ public class SurveyPrefResolver {
     private final SurveyRepository surveyRepository;
     private final ObjectMapper objectMapper;
 
-    // 설문에서 난이도와 관심사를 가져옴(성공 시 Optional.of, 실패 시 Optional.empty) */
+    // 설문에서 난이도와 관심사를 가져옴(성공 시 Optional.of, 실패 시 Optional.empty)
     public Optional<UserPref> resolve(Long userId) {
         if (userId == null) return Optional.empty();
 
@@ -39,6 +41,7 @@ public class SurveyPrefResolver {
 
             return Optional.of(new UserPref(diff, interest));
         } catch (Exception e) {
+            log.warn("Failed to resolve survey preferences for userId={}", userId, e);
             return Optional.empty();
         }
     }

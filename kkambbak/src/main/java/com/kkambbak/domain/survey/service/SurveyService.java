@@ -25,7 +25,7 @@ public class SurveyService {
 
     private final SurveyRepository surveyRepository;
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
 
     // 설문 저장
@@ -70,7 +70,7 @@ public class SurveyService {
     // Map을 Json 문자열로 바꿔 저장 가능한 형태로
     private String toCanonicalJsonOrThrow(Map<String, Object> map) {
         try {
-            return objectMapper.writeValueAsString(objectMapper.valueToTree(map));
+            return objectMapper.writeValueAsString(map);
         } catch (Exception e) {
             throw new InvalidSurveyRequestException();
         }

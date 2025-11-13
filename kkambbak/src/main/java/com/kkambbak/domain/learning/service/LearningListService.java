@@ -104,7 +104,7 @@ public class LearningListService {
         if (limit <= 0 || limit > MAX_LIMIT) {
             throw new InvalidPagingParamException();
         }
-        if (cursor != null && cursor < 0) {
+        if (cursor != null && cursor <= 0) {
             throw new InvalidPagingParamException();
         }
     }
@@ -114,9 +114,8 @@ public class LearningListService {
         if (prefOpt.isEmpty()) return null;
 
         UserPref p = prefOpt.get();
-        List<Long> ids = withDb(() ->
-                sessionRepository.findAllTopExposureIds(category, p.difficultyLevel(), p.interestType())
-        );
+        List<Long> ids =
+                sessionRepository.findAllTopExposureIds(category, p.difficultyLevel(), p.interestType());
         return toNullIfEmpty(ids);
     }
 
@@ -131,15 +130,14 @@ public class LearningListService {
         if (cursor != null) return Collections.emptyList();
 
         UserPref p = prefOpt.get();
-        List<Session> topExposure = withDb(() ->
+        List<Session> topExposure =
                 sessionRepository.findTopExposureSessions(
                         categoryType,
                         p.difficultyLevel(),
                         p.interestType(),
                         null,
                         firstPage(limit)
-                )
-        );
+                );
 
         boolean mismatch = topExposure.stream().anyMatch(s -> s.getCategory().getType() != categoryType);
         if (mismatch) throw new InconsistentExposureRuleException();
@@ -161,14 +159,13 @@ public class LearningListService {
         List<Long> finalExclude = toNullIfEmpty(excludeIds);
 
 
-        List<Session> overFetched = withDb(() ->
+        List<Session> overFetched =
                 sessionRepository.findDefaultSessions(
                         category,
                         finalExclude,
                         cursor,
                         firstPage(remaining + 1)
-                )
-        );
+                );
 
         OverfetchResult<Session> of = OverfetchResult.slice(overFetched, remaining);
 
@@ -177,28 +174,24 @@ public class LearningListService {
 
     // 세션별 단어 개수 조회
     private Map<Long, Integer> fetchVocabularyCounts(List<Long> sessionIds) {
-        return withDb(() ->
-                sessionVocabularyRepository.findCountsBySessionIds(sessionIds)
-                        .stream()
-                        .collect(Collectors.toMap(
-                                SessionVocabularyRepository.SessionIdCount::getSessionId,
-                                r -> (int) r.getCnt()
-                        ))
-        );
+        return sessionVocabularyRepository.findCountsBySessionIds(sessionIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        SessionVocabularyRepository.SessionIdCount::getSessionId,
+                        r -> (int) r.getCnt()
+                ));
     }
 
     // 사용자의 학습 결과 조회
     private Map<Long, LearningResult> fetchLearningResults(Long userId, List<Long> sessionIds) {
         if (userId == null) return Map.of();
 
-        return withDb(() ->
-                learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
-                        .stream()
-                        .collect(Collectors.toMap(
-                                lr -> lr.getSession().getId(),
-                                lr -> lr
-                        ))
-        );
+        return learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        lr -> lr.getSession().getId(),
+                        lr -> lr
+                ));
     }
 
     // 세션 → DTO 변환
@@ -241,15 +234,6 @@ public class LearningListService {
 
     private record DefaultSessionResult(List<Session> sessions, boolean hasMore) {}
     private record PagingInfo(Long nextCursor, boolean hasNext) {}
-
-    // db try/catch 자동 처리
-    private static <T> T withDb(Supplier<T> action) {
-        try {
-            return action.get();
-        } catch (DataAccessException e) {
-            throw new LearningQueryException();
-        }
-    }
 
     // 빈 리스트를 null로
     private static <T> List<T> toNullIfEmpty(List<T> list) {

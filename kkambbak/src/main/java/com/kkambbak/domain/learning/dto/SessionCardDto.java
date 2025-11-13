@@ -10,6 +10,8 @@ import lombok.*;
 @Builder
 public class SessionCardDto {
 
+    private static final int DEFAULT_DURATION_SECONDS = 120;
+
     private Long id;                 // 세션 고유 ID
     private String title;            // ex. Topik 1, Emotions
     private String categoryName;     // ex. TOPIK, CASUAL
@@ -25,7 +27,7 @@ public class SessionCardDto {
                 .categoryName(session.getCategory().getType().name())
                 .vocabularyCount(vocabCount)
                 .completed(false)
-                .durationSeconds(120)
+                .durationSeconds(DEFAULT_DURATION_SECONDS)
                 .build();
     }
 
@@ -39,11 +41,7 @@ public class SessionCardDto {
                 .completed(result != null)
                 .durationSeconds(result != null && result.getDurationSeconds() != null
                         ? result.getDurationSeconds()
-                        : 120)
+                        : DEFAULT_DURATION_SECONDS)
                 .build();
-    }
-
-    public static SessionCardDto of(Session session, int vocabCount, LearningResult result) {
-        return of(session, result, vocabCount);
     }
 }
