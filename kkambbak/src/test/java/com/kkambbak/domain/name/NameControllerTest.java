@@ -9,7 +9,6 @@ import com.kkambbak.domain.name.facade.NameFacade;
 import com.kkambbak.domain.name.service.NameService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -57,8 +56,8 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
         given(nameFacade.generate(anyLong())).willReturn(mockResponse);
 
         mockMvc.perform(post("/api/v1/name/generate")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andDo(document("name-generate",
@@ -104,8 +103,8 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                 .select(anyLong(), any(NameSelectRequestDto.class));
 
         mockMvc.perform(post("/api/v1/name/select")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andDo(print())

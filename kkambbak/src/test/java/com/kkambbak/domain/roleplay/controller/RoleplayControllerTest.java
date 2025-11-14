@@ -53,8 +53,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         //when & then
         mockMvc.perform(get("/api/v1/roleplay/all")
-                .header(AUTH_HEADER,TEST_ACCESS_TOKEN)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.body[0].title").value("At a Cafe"))
                 .andExpect(jsonPath("$.body[1].title").value("At school"))
@@ -105,8 +105,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         mockMvc.perform(post("/api/v1/roleplay/start?scenarioId=1")
                         .param("scenarioId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-start",
                         resource(ResourceSnippetParameters.builder()
@@ -165,8 +165,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
         // when & then
         mockMvc.perform(post("/api/v1/roleplay/next?sessionId=1")
                         .param("sessionId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-next",
                         resource(ResourceSnippetParameters.builder()
@@ -231,7 +231,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                         .file(audioFile)
                         .param("sessionId", "1")
                         .param("dialogueId", "2")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN))
+                        .header("Authorization", "Bearer access_token_example"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-evaluate",
                         resource(ResourceSnippetParameters.builder()
@@ -274,8 +274,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         mockMvc.perform(post("/api/v1/roleplay/complete?sessionId=1")
                         .param("sessionId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-complete",
                         resource(ResourceSnippetParameters.builder()
