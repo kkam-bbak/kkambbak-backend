@@ -9,7 +9,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
@@ -83,6 +82,11 @@ public class User extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+
+    @Builder.Default
+    @Column(name = "roleplay_count", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer roleplayCount =0;
+
     public User updateFromOAuth2(String email, String name, String profileImage) {
         this.email = email;
         this.name = name;
@@ -109,5 +113,15 @@ public class User extends BaseEntity {
         this.countryOfOrigin = countryOfOrigin;
         this.personalityOrImage = personalityOrImage;
         this.preferredNameMeaning = preferredNameMeaning;
+    }
+
+    //롤플레이 월 사용 횟수 증가
+    public void incrementUsage() {
+        this.roleplayCount += 1;
+    }
+
+    //롤플레이 월 사용 횟수 초기화 (추후 스케줄러)
+    public void resetUsage() {
+        this.roleplayCount = 0;
     }
 }

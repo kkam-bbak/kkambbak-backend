@@ -40,6 +40,14 @@ dependencies {
 	testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.18.2'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+
+    //romanized
+    implementation 'net.crizin:korean-romanizer:2.0.1'
+
+
+    //ffmpeg
+    implementation 'net.bramp.ffmpeg:ffmpeg:0.6.2'
 }
 
 ext {
