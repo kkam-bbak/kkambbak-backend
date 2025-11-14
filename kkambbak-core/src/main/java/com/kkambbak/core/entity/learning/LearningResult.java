@@ -38,4 +38,28 @@ public class LearningResult extends BaseEntity {
 
     @Column(name = "duration_seconds")
     private Integer durationSeconds;   // 소요 시간(초)
+
+    public static LearningResult startOf(Long userId, Session session, int totalCount) {
+        return LearningResult.builder()
+                .userId(userId)
+                .session(session)
+                .totalCount(totalCount)
+                .correctCount(0)
+                .startedAt(java.time.LocalDateTime.now())
+                .build();
+    }
+
+    public void complete() {
+        this.completedAt = java.time.LocalDateTime.now();
+        if (this.startedAt != null) {
+            this.durationSeconds =
+                    (int) java.time.Duration.between(this.startedAt, this.completedAt).getSeconds();
+        }
+    }
+
+    @Transient
+    public boolean isCompleted() {
+        return this.completedAt != null;
+    }
+
 }
