@@ -41,6 +41,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
         NameResponseDto mockResponse =
                 NameResponseDto.builder()
                         .historyId(1L)
+                        .remainingAttempts(3)
                         .generationOutput(
                                 NameResponseDto.GenerationOutput.builder()
                                         .names(
@@ -66,7 +67,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                                 .summary("한국어 이름 생성")
                                 .description("""
                                         사용자의 성별,성격 및 이미지, 원하는 이름 느낌을 기반으로
-                                        GPT가 한국어 이름 후보 2개를 생성합니다.
+                                        GPT가 한국어 이름 후보 2개를 생성하고, 생성된 한국 이름과 로마자 표기, 뜻이 담긴 배열과 남은 시도 횟수를 반환합니다.
                                         """)
                                 .requestHeaders(
                                         headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
@@ -76,11 +77,12 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                                         fieldWithPath("status.message").type(JsonFieldType.STRING).description("응답 메시지"),
                                         fieldWithPath("status.description").type(JsonFieldType.STRING).optional().description("상태 설명"),
 
-                                        fieldWithPath("body.historyId").type(JsonFieldType.NUMBER).description("생성 기록 ID"),
+                                        fieldWithPath("body.historyId").type(JsonFieldType.NUMBER).description("이름 히스토리 ID"),
+                                        fieldWithPath("body.remainingAttempts").type(JsonFieldType.NUMBER).description("남은 생성 가능 횟수"),
                                         fieldWithPath("body.generationOutput.names").type(JsonFieldType.ARRAY).description("생성된 이름 후보 2개"),
                                         fieldWithPath("body.generationOutput.names[].koreanName").type(JsonFieldType.STRING).description("한국어 이름"),
                                         fieldWithPath("body.generationOutput.names[].romanization").type(JsonFieldType.STRING).description("로마자 표기"),
-                                        fieldWithPath("body.generationOutput.names[].poeticMeaning").type(JsonFieldType.STRING).description("이름의 감성적 의미")
+                                        fieldWithPath("body.generationOutput.names[].poeticMeaning").type(JsonFieldType.STRING).description("이름의 의미")
                                 )
                                 .build()
                         )
@@ -99,7 +101,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
         request.setMeaningOfName("A warm gentle light");
 
         willDoNothing().given(nameFacade)
-                .select(eq(10L), any(NameSelectRequestDto.class));
+                .select(anyLong(), any(NameSelectRequestDto.class));
 
         mockMvc.perform(post("/api/v1/name/select")
                         .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
@@ -119,9 +121,9 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                                         headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
                                 )
                                 .requestFields(
-                                        fieldWithPath("historyId").type(JsonFieldType.NUMBER).description("이름 후보 히스토리 ID"),
+                                        fieldWithPath("historyId").type(JsonFieldType.NUMBER).description("이름 히스토리 ID"),
                                         fieldWithPath("koreanName").type(JsonFieldType.STRING).description("선택한 한국어 이름"),
-                                        fieldWithPath("meaningOfName").type(JsonFieldType.STRING).optional().description("사용자가 직접 지정한 이름 의미")
+                                        fieldWithPath("meaningOfName").type(JsonFieldType.STRING).optional().description("GPT가 생성한 한국어 이름 의미")
                                 )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("응답 상태 코드"),

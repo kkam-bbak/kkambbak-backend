@@ -60,6 +60,7 @@ public class NameFacade {
 
         return NameResponseDto.builder()
                 .historyId(history.getId())
+                .remainingAttempts(NAME_GENERATION_LIMIT-nextAttempt)
                 .generationOutput(
                         NameResponseDto.GenerationOutput.builder()
                                 .names(candidates)

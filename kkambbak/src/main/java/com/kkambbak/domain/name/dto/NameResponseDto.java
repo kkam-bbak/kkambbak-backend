@@ -8,6 +8,7 @@ import java.util.List;
 @Builder
 public class NameResponseDto {
     private Long historyId;
+    private Integer remainingAttempts;
 
     @Getter
     @Builder
