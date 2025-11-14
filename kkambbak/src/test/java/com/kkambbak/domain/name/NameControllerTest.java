@@ -70,7 +70,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                                         GPT가 한국어 이름 후보 2개를 생성하고, 생성된 한국 이름과 로마자 표기, 뜻이 담긴 배열과 남은 시도 횟수를 반환합니다.
                                         """)
                                 .requestHeaders(
-                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                        headerWithName("Authorization").description("Bearer 액세스 토큰")
                                 )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("응답 상태 코드"),
@@ -118,7 +118,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
                                         사용자 프로필에 한국어 이름을 최종 저장합니다.
                                         """)
                                 .requestHeaders(
-                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                        headerWithName("Authorization").description("Bearer 액세스 토큰")
                                 )
                                 .requestFields(
                                         fieldWithPath("historyId").type(JsonFieldType.NUMBER).description("이름 히스토리 ID"),
