@@ -3,7 +3,7 @@ package com.kkambbak.client.openai.prompts;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OpenAiPromptTemplate {
+public class RoleplayPromptTemplate {
 
     /**
      * 롤플레이 시작 시 사용할 GPT 프롬프트
@@ -64,6 +64,9 @@ public class OpenAiPromptTemplate {
         No explanations or markdown.
         """.formatted(prevRole);
     }
+
+
+
 
 
 
