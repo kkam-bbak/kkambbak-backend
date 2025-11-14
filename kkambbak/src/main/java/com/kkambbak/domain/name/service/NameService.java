@@ -7,9 +7,13 @@ import com.kkambbak.client.openai.dto.ChatResponseDto;
 import com.kkambbak.core.entity.name.NameHistory;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.name.NameHistoryRepository;
+import com.kkambbak.core.repository.user.UserRepository;
+import com.kkambbak.domain.auth.exception.UserNotFoundException;
 import com.kkambbak.domain.name.dto.NameCandidateItemDto;
 import com.kkambbak.domain.name.exception.NameCandidateParseException;
 import com.kkambbak.domain.name.exception.NameGenerationSaveException;
+import com.kkambbak.domain.name.exception.NameHistoryForbiddenException;
+import com.kkambbak.domain.name.exception.NameHistoryNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +28,7 @@ import java.util.Map;
 public class NameService {
     private final NameHistoryRepository nameHistoryRepository;
     private final ObjectMapper objectMapper;
-
+    private final UserRepository userRepository;
 
     public List<NameCandidateItemDto> parseCandidates(ChatResponseDto response) {
         try {
@@ -33,7 +37,7 @@ public class NameService {
             JsonNode namesNode = rootNode.get("names");
 
             if (namesNode == null || !namesNode.isArray()) {
-                log.error("GPT 응답에서 'names' 배열이 없습니다");
+                log.error("GPT 응답에서 'names' 배열이 없습니다.");
                 throw new NameCandidateParseException();
             }
             return objectMapper.convertValue(
@@ -56,6 +60,7 @@ public class NameService {
             return history;
 
         } catch (Exception e) {
+            log.error("이름 생성 결과 저장 실패", e);
             throw new NameGenerationSaveException();
         }
     }
@@ -64,4 +69,23 @@ public class NameService {
         int count = nameHistoryRepository.countByUser_Id(userId);
         return count + 1;
     }
+
+
+    public NameHistory validateHistoryOfUser(Long userId, Long historyId) {
+        NameHistory history = nameHistoryRepository.findById(historyId)
+                .orElseThrow(NameHistoryNotFoundException::new);
+
+        if (!history.getUser().getId().equals(userId)) {
+            throw new NameHistoryForbiddenException();
+        }
+        return history;
+    }
+
+    @Transactional
+    public void selectName(NameHistory history, String koreanName, String nameMeaning) {
+        User user = history.getUser();
+        history.markSelected();
+        user.updateKoreanName(koreanName, nameMeaning);
+    }
 }
+

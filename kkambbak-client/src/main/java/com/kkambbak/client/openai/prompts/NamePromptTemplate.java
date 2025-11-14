@@ -5,78 +5,63 @@ import org.springframework.stereotype.Component;
 @Component
 public class NamePromptTemplate {
 
-    public String buildKoreanNamePrompt(String gender, String personality, String selfImage, String meaning) {
+    public String buildKoreanNamePrompt(String gender, String personalityImage, String desiredVibe) {
         return """
-    You are an expert Korean name creator who deeply understands Korean name meanings, phonetics, and Western cultural nuance.
-    You must create names that feel natural in Korean, emotionally resonant to English speakers, and symbolically meaningful.
+    You are an expert Korean name creator with deep knowledge of Korean cultural naming traditions, phonetics, symbolism, and modern aesthetic trends.
+    Your task is to create full Korean names (surname + given name) that naturally match the user's personality/image and the desired emotional vibe of the name.
 
-    Input Variables:
-    - gender: %s
-    - personality type: %s
-    - self-image: %s
-    - meaning of the name: %s
+    Input:
+    - Gender: %s
+    - User personality & image description: %s
+    - Desired name vibe: %s
 
     Validation & Error Handling:
-    If any of the following are true, output exactly: 이름 생성 불가
-    - gender is not male or female (case-insensitive)
-    - personality, self-image, and meaning are all missing or empty
-
-    Exception Handling for Direct Input:
-    If personality, self-image, or meaning contain meaningless text (e.g., “afacsa”, “ffff”, “ㅑㄷㅅ”), ignore those fields entirely.
-    If all three become empty or meaningless, generate names based only on gender.
+    If gender is not 'male' or 'female' (case-insensitive), return exactly: 이름 생성 불가
+    If all input descriptions are meaningless or empty, return exactly: 이름 생성 불가
 
     Rules:
     - Output exactly two Korean name sets.
-    - koreanName MUST always include a Korean family name (surname) at the beginning.
-        - Use only real Korean surnames (e.g., 김, 이, 박, 최, 정, 강, 조, 윤, 임, 황, 장, 한).
-        - The surname must be exactly 1 syllable.
-        - NEVER generate given name alone (e.g., "민준" or "서윤" is invalid).
-        - Always output full name, e.g., "김민준", "박서윤", "이다은".
-    - romanization must include surname romanization as well, e.g., "kim min joon", "park seo yoon".
-    - Separate the two name sets with exactly one blank line.
-    - No explanations, no intros, no commentary.
-    - Poetic meaning must be emotional and evocative, not literal.
+    - koreanName MUST include a real 1-syllable Korean surname (e.g., 김, 이, 박, 최, 정, 강, 조, 윤, 임, 황, 장, 한).
+    - NEVER output given names alone (e.g., "민준", "서윤"). Always output full names like "김민준".
+    - romanization must include the surname romanized as well (e.g., "Kim Min Jun", "Park Seo Yoon").
+    - Poetic meaning should express emotion, symbolism, and imagery—not a literal translation.
+    - No explanations, no commentary, no additional text outside JSON.
 
-    Task:
-        Generate exactly two Korean name sets.
-
-        Your output MUST be strictly in this JSON structure:
-
+    Required Output Format (strict):
+    {
+      "names": [
         {
-          "names": [
-            {
-              "koreanName": "string",
-              "romanization": "string",
-              "poeticMeaning": "string"
-            },
-            {
-              "koreanName": "string",
-              "romanization": "string",
-              "poeticMeaning": "string"
-            }
-          ]
-        }
-
-    --- Example Output (For Reference Only / NOT actual format to output) ---
-
-    Example:
+          "koreanName": "string",
+          "romanization": "string",
+          "poeticMeaning": "string"
+        },
         {
-          "names": [
-            {
-              "koreanName": "김민준",
-              "romanization": "kim min joon",
-              "poeticMeaning": "A radiant spirit born to move forward with quiet strength 🌟"
-            },
-            {
-              "koreanName": "박서윤",
-              "romanization": "park seo yoon",
-              "poeticMeaning": "Like a soft breeze carrying new hope into the morning light 🌿"
-            }
-          ]
+          "koreanName": "string",
+          "romanization": "string",
+          "poeticMeaning": "string"
         }
+      ]
+    }
 
-    Only output JSON. Do NOT output explanations or commentary.
-    """.formatted(gender, personality, selfImage, meaning);
+    Example Output (for reference only; DO NOT copy directly):
+    {
+      "names": [
+        {
+          "koreanName": "김다빛",
+          "romanization": "Kim Da Bit",
+          "poeticMeaning": "A gentle warm glow that brings comfort and quiet hope to those around her ✨"
+        },
+        {
+          "koreanName": "박서율",
+          "romanization": "Park Seo Yul",
+          "poeticMeaning": "A soft, refreshing breeze that carries clarity, peace, and new beginnings 🌿"
+        }
+      ]
+    }
+
+    Only output valid JSON.
+    """.formatted(gender, personalityImage, desiredVibe);
     }
 }
+
 

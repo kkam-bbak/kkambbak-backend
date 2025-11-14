@@ -1,8 +1,8 @@
 package com.kkambbak.domain.name.controller;
 
 
-import com.kkambbak.domain.name.dto.NameRequestDto;
 import com.kkambbak.domain.name.dto.NameResponseDto;
+import com.kkambbak.domain.name.dto.NameSelectRequestDto;
 import com.kkambbak.domain.name.facade.NameFacade;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
@@ -22,10 +22,18 @@ public class NameController {
     //한국어 이름 생성 API
     @PostMapping("/generate")
     public ApiResponse<NameResponseDto> createKoreanName(
-            @AuthenticationPrincipal UserDetailsImpl user,
-            @RequestBody NameRequestDto nameRequestDto) {
-        NameResponseDto nameCandidateResponse = nameFacade.generate(user.getUserId(), nameRequestDto);
+            @AuthenticationPrincipal UserDetailsImpl user) {
+        NameResponseDto nameCandidateResponse = nameFacade.generate(user.getUserId());
         return ApiResponse.ok(nameCandidateResponse);
+    }
+
+    //한국어 이름 선택 API
+    @PostMapping("/select")
+    public ApiResponse<Void> selectKoreanName(
+            @AuthenticationPrincipal UserDetailsImpl user,
+            @RequestBody NameSelectRequestDto nameSelectRequestDto){
+        nameFacade.select(user.getUserId(),nameSelectRequestDto);
+        return ApiResponse.ok();
     }
 
 
