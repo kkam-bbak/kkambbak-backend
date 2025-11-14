@@ -51,3 +51,19 @@ kakao:
       success-url: ${KAKAO_PAY_SUCCESS_URL:http://localhost:3000/payment/success}
       cancel-url: ${KAKAO_PAY_CANCEL_URL:http://localhost:3000/payment/fail}
       fail-url: ${KAKAO_PAY_FAIL_URL:http://localhost:3000/payment/fail}
+
+
+openai:
+  api:
+    base-url: ${OPENAI_API_BASE_URL:https://api.openai.com/v1}
+    key: ${OPENAI_API_KEY:}
+
+  timeout:
+    connect-ms: 5000
+    read-s: 60
+    write-s: 10
+
+
+azure:
+  api:
+    key: ${AZURE_API_KEY:dummy_azure_key}
