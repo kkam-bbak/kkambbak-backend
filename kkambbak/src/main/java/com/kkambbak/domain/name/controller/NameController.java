@@ -6,6 +6,7 @@ import com.kkambbak.domain.name.dto.NameSelectRequestDto;
 import com.kkambbak.domain.name.facade.NameFacade;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,8 +32,8 @@ public class NameController {
     @PostMapping("/select")
     public ApiResponse<Void> selectKoreanName(
             @AuthenticationPrincipal UserDetailsImpl user,
-            @RequestBody NameSelectRequestDto nameSelectRequestDto){
-        nameFacade.select(user.getUserId(),nameSelectRequestDto);
+            @RequestBody @Valid NameSelectRequestDto nameSelectRequestDto){
+        nameFacade.select(user.getUserId(), nameSelectRequestDto);
         return ApiResponse.ok();
     }
 

@@ -44,6 +44,7 @@ public class NameFacade {
         });
         int nextAttempt = nameService.calculateNextAttempt(userId);
 
+
         if (nextAttempt > NAME_GENERATION_LIMIT) {
             throw new NameGenerationExceedException();
         }
@@ -60,7 +61,7 @@ public class NameFacade {
 
         return NameResponseDto.builder()
                 .historyId(history.getId())
-                .remainingAttempts(NAME_GENERATION_LIMIT-nextAttempt)
+                .remainingAttempts(NAME_GENERATION_LIMIT -nextAttempt)
                 .generationOutput(
                         NameResponseDto.GenerationOutput.builder()
                                 .names(candidates)
@@ -72,6 +73,6 @@ public class NameFacade {
 
     public void select(Long userId, NameSelectRequestDto nameSelectRequestDto) {
         NameHistory history = nameService.validateHistoryOfUser(userId, nameSelectRequestDto.getHistoryId());
-        nameService.selectName(history, nameSelectRequestDto.getKoreanName(),nameSelectRequestDto.getMeaningOfName());
+        nameService.selectName(history, nameSelectRequestDto.getKoreanName(), nameSelectRequestDto.getMeaningOfName());
     }
 }

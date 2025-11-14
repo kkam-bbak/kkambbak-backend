@@ -35,12 +35,12 @@ public class NameHistory extends BaseEntity {
 
 
     public static NameHistory create(User user, Map<String, Object> output, Integer attemptCount) {
-        NameHistory history = new NameHistory();
-        history.user = user;
-        history.generationOutput = output;
-        history.attemptCount = attemptCount;
-        history.isSelected = false;
-        return history;
+        return NameHistory.builder()
+                .user(user)
+                .generationOutput(output)
+                .attemptCount(attemptCount)
+                .isSelected(false)
+                .build();
     }
 
 

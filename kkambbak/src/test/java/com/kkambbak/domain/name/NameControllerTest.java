@@ -6,7 +6,6 @@ import com.kkambbak.domain.name.dto.NameCandidateItemDto;
 import com.kkambbak.domain.name.dto.NameResponseDto;
 import com.kkambbak.domain.name.dto.NameSelectRequestDto;
 import com.kkambbak.domain.name.facade.NameFacade;
-import com.kkambbak.domain.name.service.NameService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.restdocs.payload.JsonFieldType;
@@ -28,9 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class NameControllerTest extends KkambbakDocumentApiTester {
     @MockitoBean
     private NameFacade nameFacade;
-
-    @MockitoBean
-    private NameService nameService;
 
 
     @Test
@@ -94,10 +90,7 @@ public class NameControllerTest extends KkambbakDocumentApiTester {
     @DisplayName("한국어 이름 선택 API")
     void selectKoreanName() throws Exception {
 
-        NameSelectRequestDto request = new NameSelectRequestDto();
-        request.setHistoryId(1L);
-        request.setKoreanName("김다빛");
-        request.setMeaningOfName("A warm gentle light");
+        NameSelectRequestDto request = new NameSelectRequestDto(1L,"김다빛","A warm gentle light");
 
         willDoNothing().given(nameFacade)
                 .select(anyLong(), any(NameSelectRequestDto.class));
