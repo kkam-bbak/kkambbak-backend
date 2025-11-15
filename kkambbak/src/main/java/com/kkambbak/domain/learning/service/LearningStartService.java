@@ -61,9 +61,6 @@ public class LearningStartService {
             default -> throw new InvalidStartParamException("지원하지 않는 학습 모드입니다: " + mode);
         }
 
-        // 기존 학습 결과 삭제
-        removeAllResultsFor(userId, sessionId);
-
         // 새 학습 결과 생성 및 저장
         LearningResult saved = learningResultRepository.save(
                 LearningResult.startOf(userId, session, vocabIds.size())
@@ -153,18 +150,6 @@ public class LearningStartService {
                 ));
     }
 
-    // 기존 학습 결과 삭제
-    private void removeAllResultsFor(Long userId, Long sessionId) {
-        List<LearningResult> olds =
-                learningResultRepository.findByUserIdAndSessionIds(userId, List.of(sessionId));
-
-        if (olds.isEmpty()) return;
-
-        List<Long> oldIds = olds.stream().map(LearningResult::getId).toList();
-
-        learningResultDetailsRepository.deleteAllByResultIds(oldIds);
-        learningResultRepository.deleteAllById(oldIds);
-    }
 
     // 첫 단어 정보 만들기
     private LearningStartDto.StartResponse.FirstVocabulary makeFirstVocabulary(Long vocabId) {

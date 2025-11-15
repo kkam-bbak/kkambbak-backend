@@ -182,15 +182,21 @@ public class LearningListService {
                 ));
     }
 
-    // 사용자의 학습 결과 조회
+    // 사용자의 학습 결과 조회 (세션별 최신 1건만 사용)
     private Map<Long, LearningResult> fetchLearningResults(Long userId, List<Long> sessionIds) {
         if (userId == null) return Map.of();
 
-        return learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds)
-                .stream()
+        List<LearningResult> results =
+                learningResultRepository.findByUserIdAndSessionIds(userId, sessionIds);
+
+        return results.stream()
                 .collect(Collectors.toMap(
                         lr -> lr.getSession().getId(),
-                        lr -> lr
+                        lr -> lr,
+                        (oldResult, newResult) ->
+                                (oldResult.getId() < newResult.getId())
+                                        ? newResult
+                                        : oldResult
                 ));
     }
 

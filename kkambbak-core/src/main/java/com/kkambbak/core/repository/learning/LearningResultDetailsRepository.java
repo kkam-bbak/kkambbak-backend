@@ -22,8 +22,8 @@ public interface LearningResultDetailsRepository extends JpaRepository<LearningR
 """)
     List<Long> findWrongVocabIdsByResultIdOrderBySessionOrder(@Param("resultId") Long resultId);
 
-    // 학습 초기화
-    @Modifying
-    @Query("delete from LearningResultDetail d where d.learningResult.id in :ids")
-    int deleteAllByResultIds(@Param("ids") List<Long> ids);
+    Optional<LearningResultDetail> findByLearningResultIdAndVocabularyId(
+            Long learningResultId,
+            Long vocabularyId
+    );
 }
