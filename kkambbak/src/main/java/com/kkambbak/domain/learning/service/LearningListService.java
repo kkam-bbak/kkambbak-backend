@@ -10,17 +10,14 @@ import com.kkambbak.domain.learning.dto.LearningSessionListResponse;
 import com.kkambbak.domain.learning.dto.SessionCardDto;
 import com.kkambbak.domain.learning.exception.InconsistentExposureRuleException;
 import com.kkambbak.domain.learning.exception.InvalidPagingParamException;
-import com.kkambbak.domain.learning.exception.LearningQueryException;
 import com.kkambbak.domain.learning.support.SurveyPrefResolver;
 import com.kkambbak.domain.learning.support.SurveyPrefResolver.UserPref;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service

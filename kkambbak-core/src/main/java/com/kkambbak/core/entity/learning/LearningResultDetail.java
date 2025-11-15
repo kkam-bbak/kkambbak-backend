@@ -30,4 +30,8 @@ public class LearningResultDetail extends BaseEntity {
     @Column(name = "user_answer", columnDefinition = "TEXT")
     private String userAnswer;
 
+    public void update(boolean correct, String userAnswer) {
+        this.correct = correct;
+        this.userAnswer = userAnswer;
+    }
 }

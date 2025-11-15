@@ -33,7 +33,7 @@ public class LearningResult extends BaseEntity {
     @Column(name = "started_at")
     private LocalDateTime startedAt;   // 학습 시작 시각
 
-    @Column(name = "completed_at", nullable = false)
+    @Column(name = "completed_at", nullable = true)
     private LocalDateTime completedAt; // 학습 완료 시각
 
     @Column(name = "duration_seconds")
@@ -62,4 +62,10 @@ public class LearningResult extends BaseEntity {
         return this.completedAt != null;
     }
 
+    public void addCorrectCount() {
+        if (this.correctCount == null) {
+            this.correctCount = 0;
+        }
+        this.correctCount++;
+    }
 }
