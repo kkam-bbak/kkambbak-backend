@@ -124,4 +124,11 @@ public class User extends BaseEntity {
     public void resetUsage() {
         this.roleplayCount = 0;
     }
+
+
+    //한국어 이름 생성
+    public void updateKoreanName(String koreanName,String nameMeaning) {
+        this.koreanName = koreanName;
+        this.nameMeaning = nameMeaning;
+    }
 }

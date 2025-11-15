@@ -53,8 +53,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         //when & then
         mockMvc.perform(get("/api/v1/roleplay/all")
-                .header(AUTH_HEADER,TEST_ACCESS_TOKEN)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.body[0].title").value("At a Cafe"))
                 .andExpect(jsonPath("$.body[1].title").value("At school"))
@@ -66,7 +66,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                         .summary("Roleplay Scenarios 리스트 반환")
                                         .description("DB에 저장된 Roleplay Scenarios 리스트가 반환됩니다.")
                                         .requestHeaders(
-                                                headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                                headerWithName("Authorization").description("Bearer 액세스 토큰")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
@@ -105,8 +105,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         mockMvc.perform(post("/api/v1/roleplay/start?scenarioId=1")
                         .param("scenarioId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-start",
                         resource(ResourceSnippetParameters.builder()
@@ -114,7 +114,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                 .summary("Roleplay 세션 시작")
                                 .description("선택한 시나리오로 Roleplay 세션을 시작하고 AI의 첫 문장을 반환합니다.")
                                 .requestHeaders(
-                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                        headerWithName("Authorization").description("Bearer 액세스 토큰")
                                 )
                                 .queryParameters(
                                         parameterWithName("scenarioId").description("시작할 시나리오 ID")
@@ -165,8 +165,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
         // when & then
         mockMvc.perform(post("/api/v1/roleplay/next?sessionId=1")
                         .param("sessionId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-next",
                         resource(ResourceSnippetParameters.builder()
@@ -177,7 +177,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                     speaker가 USER일 경우, mismatch 문장을 카드섹션에 활용합니다.
                                     """)
                                 .requestHeaders(
-                                        headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
+                                        headerWithName("Authorization").description("Bearer 액세스 토큰")
                                 )
                                 .queryParameters(
                                         parameterWithName("sessionId").description("세션 ID")
@@ -231,7 +231,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                         .file(audioFile)
                         .param("sessionId", "1")
                         .param("dialogueId", "2")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN))
+                        .header("Authorization", "Bearer access_token_example"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-evaluate",
                         resource(ResourceSnippetParameters.builder()
@@ -245,7 +245,7 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
                                     - `dialogueId`: 문장 ID
                                     """)
                                 .requestHeaders(
-                                        headerWithName("Authorization").description("Bearer 토큰")
+                                        headerWithName("Authorization").description("Bearer 액세스 토큰")
                                 )
                                 .responseFields(
                                         fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
@@ -274,8 +274,8 @@ public class RoleplayControllerTest extends KkambbakDocumentApiTester {
 
         mockMvc.perform(post("/api/v1/roleplay/complete?sessionId=1")
                         .param("sessionId", "1")
-                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json"))
                 .andExpect(status().isOk())
                 .andDo(document("roleplay-complete",
                         resource(ResourceSnippetParameters.builder()
