@@ -220,7 +220,7 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Users")
-                                        .summary("회원가입")
+                                        .summary("사용자 정보 회원가입")
                                         .description("소셜 로그인 또는 게스트 로그인 후 회원가입 진행합니다. 이름, 성별, 국가는 필수이며 프로필 사진 URL은 선택사항입니다.")
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
@@ -261,7 +261,7 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Users")
-                                        .summary("한국어 이름 생성")
+                                        .summary("한국어 이름 생성을 위한 회원가입")
                                         .description("원하는 이름의 의미와 본인이 생각하는 자기의 성격/이미지 설명을 저장합니다.")
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
