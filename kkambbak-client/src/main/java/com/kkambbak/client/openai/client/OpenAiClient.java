@@ -36,6 +36,12 @@ public class OpenAiClient {
         return openAiService.postToChat(body);
     }
 
+    //한국어 이름
+    public ChatResponseDto getKoreanName(List<ChatMessage> messages, String model) {
+        Map<String, Object> body = buildRequestBody(model, messages, openAiSchemaFactory.koreanNameSchema());
+        return openAiService.postToChat(body);
+    }
+
 
     //공통
     private Map<String, Object> buildRequestBody(String model, List<ChatMessage> messages, Map<String, Object> schema) {

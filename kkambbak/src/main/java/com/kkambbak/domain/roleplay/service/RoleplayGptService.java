@@ -21,6 +21,7 @@ public class RoleplayGptService {
 
     private final OpenAiClient openAiClient;
     private final ObjectMapper objectMapper;
+    private static final String GPT_MODEL = "gpt-4o-mini";
 
 
     //롤플레이 첫 시작 시
@@ -29,7 +30,7 @@ public class RoleplayGptService {
                 new ChatMessage("system", prompt),
                 new ChatMessage("user", "Let's start the roleplay.")
         );
-        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini");
+        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,GPT_MODEL);
         String content = response.getChoices().get(0).getMessage().getContent();
         return parseSentenceResponse(content);
     }
@@ -37,7 +38,7 @@ public class RoleplayGptService {
     //롤플레이 이어서 진행할 시
     public RoleplaySentenceDto continueSentence(List<ChatMessage> messages,String prevRole,String prompt){
         messages.add(new ChatMessage("user", prompt));
-        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,"gpt-4o-mini");
+        ChatResponseDto response = openAiClient.getRoleplaySentence(messages,GPT_MODEL);
         String content = response.getChoices().get(0).getMessage().getContent();
         return parseSentenceResponse(content);
     }

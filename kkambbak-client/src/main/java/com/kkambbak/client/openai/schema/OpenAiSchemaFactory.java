@@ -30,4 +30,37 @@ public class OpenAiSchemaFactory {
                 )
         );
     }
+
+    /**
+     * 한국어 이름 생성 JSON 응답 스키마
+     */
+    public Map<String, Object> koreanNameSchema() {
+        return Map.of(
+                "name", "KoreanNameSet",
+                "strict", false,
+                "schema", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "names", Map.of(
+                                        "type", "array",
+                                        "items", Map.of(
+                                                "type", "object",
+                                                "properties", Map.of(
+                                                        "koreanName", Map.of("type", "string"),
+                                                        "romanization", Map.of("type", "string"),
+                                                        "poeticMeaning", Map.of("type", "string")
+                                                ),
+                                                "required", List.of("koreanName", "romanization", "poeticMeaning"),
+                                                "additionalProperties", false
+                                        ),
+                                        "minItems", 2,
+                                        "maxItems", 2
+                                )
+                        ),
+                        "required", List.of("names"),
+                        "additionalProperties", false
+                )
+        );
+    }
+
 }

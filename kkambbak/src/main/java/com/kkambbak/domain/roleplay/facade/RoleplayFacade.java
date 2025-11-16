@@ -4,7 +4,7 @@ package com.kkambbak.domain.roleplay.facade;
 import com.kkambbak.client.azure.dto.AzurePronunciationDto;
 import com.kkambbak.client.azure.service.AzurePronunciationService;
 import com.kkambbak.client.openai.dto.ChatMessage;
-import com.kkambbak.client.openai.prompts.OpenAiPromptTemplate;
+import com.kkambbak.client.openai.prompts.RoleplayPromptTemplate;
 import com.kkambbak.core.entity.roleplay.RoleplayDialogues;
 import com.kkambbak.core.entity.roleplay.RoleplayPronunciationFeedback;
 import com.kkambbak.core.entity.roleplay.RoleplayScenario;
@@ -44,7 +44,7 @@ public class RoleplayFacade {
     private final RoleplayCacheService roleplayCacheService;
     private final RoleplayDialoguesRepository roleplayDialoguesRepository;
     private final RoleplayCreditService roleplayCreditService;
-    private final OpenAiPromptTemplate openAiPromptTemplate;
+    private final RoleplayPromptTemplate roleplayPromptTemplate;
     private final UserRepository userRepository;
     private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
     private final AudioConvertService audioConvertService;
@@ -79,7 +79,7 @@ public class RoleplayFacade {
         RoleplayScenario scenario = roleplayService.findRoleplayScenarioById(scenarioId);
         RoleplaySession roleplaySession = roleplayService.saveRoleplaySession(user, scenario);
 
-        String prompt = openAiPromptTemplate.buildRoleplayStartPrompt(roleplaySession.getScenario().getTitle());
+        String prompt = roleplayPromptTemplate.buildRoleplayStartPrompt(roleplaySession.getScenario().getTitle());
 
         RoleplaySentenceDto gptAnswer = roleplayGptService.getFirstSentence(prompt);
         List<ChatMessage> initMessages = List.of(
@@ -135,7 +135,7 @@ public class RoleplayFacade {
         RoleplayDialogues lastDialogue = roleplayService.getLastDialogue(sessionId);
 
         String prevRole = lastDialogue.getRole();
-        String prompt = openAiPromptTemplate.buildRoleplayNextPrompt(prevRole);
+        String prompt = roleplayPromptTemplate.buildRoleplayNextPrompt(prevRole);
         RoleplaySentenceDto gptAnswer = roleplayGptService.continueSentence(messages, prevRole,prompt);
         messages.add(new ChatMessage(ROLE_ASSISTANT, gptAnswer.getKorean()));
         roleplayCacheService.saveMessages(sessionId,messages);
