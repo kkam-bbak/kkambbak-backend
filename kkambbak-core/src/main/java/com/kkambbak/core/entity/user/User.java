@@ -131,4 +131,9 @@ public class User extends BaseEntity {
         this.koreanName = koreanName;
         this.nameMeaning = nameMeaning;
     }
+
+    public void updateKoreanNameWithPersonality(String preferredNameMeaning, String personalityOrImage) {
+        this.preferredNameMeaning = preferredNameMeaning;
+        this.personalityOrImage = personalityOrImage;
+    }
 }

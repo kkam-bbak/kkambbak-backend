@@ -4,11 +4,11 @@ import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.entity.user.enums.AuthProvider;
 import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.core.entity.user.enums.UserStatus;
-import com.kkambbak.core.entity.user.enums.UserRole;
 import com.kkambbak.core.repository.user.UserRepository;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
 import com.kkambbak.domain.user.dto.GetProfileDto;
+import com.kkambbak.domain.user.dto.registerKoreanDto;
 import com.kkambbak.domain.user.exception.InvalidAuthKeyException;
 import com.kkambbak.domain.user.exception.LogoutFailedException;
 import com.kkambbak.domain.user.exception.UserNotFoundException;
@@ -199,6 +199,29 @@ public class UserService {
             log.warn("Invalid gender value: {}", request.getGender());
             throw new ProfileValidationException("유효하지 않은 성별입니다. (MALE, FEMALE만 가능)");
         }
+    }
+
+    public void validateKoreanNameRequest(registerKoreanDto request) {
+        if (request.getPreferredNameMeaning() == null || request.getPreferredNameMeaning().isBlank()) {
+            throw new ProfileValidationException("선호하는 이름 의미는 필수입니다");
+        }
+
+        if (request.getPersonalityOrImage() == null || request.getPersonalityOrImage().isBlank()) {
+            throw new ProfileValidationException("성격/이미지 설명은 필수입니다");
+        }
+    }
+
+    @Transactional
+    public void registerKorean(Long userId, registerKoreanDto request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        user.updateKoreanNameWithPersonality(
+                request.getPreferredNameMeaning(),
+                request.getPersonalityOrImage()
+        );
+
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)

@@ -3,6 +3,7 @@ package com.kkambbak.domain.user.controller;
 import com.kkambbak.domain.user.dto.LoginTokenDto;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
 import com.kkambbak.domain.user.dto.GetProfileDto;
+import com.kkambbak.domain.user.dto.registerKoreanDto;
 import com.kkambbak.domain.user.facade.UserFacade;
 import com.kkambbak.domain.user.service.UserService;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
@@ -57,6 +58,14 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody UpdateProfileDto request) {
         userFacade.register(userDetails.getUserId(), request);
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/register-korean")
+    public ApiResponse<Void> registerKorean(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestBody registerKoreanDto request) {
+        userFacade.registerKorean(userDetails.getUserId(), request);
         return ApiResponse.ok();
     }
 

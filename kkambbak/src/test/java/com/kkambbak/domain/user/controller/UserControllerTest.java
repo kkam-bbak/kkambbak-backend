@@ -243,6 +243,45 @@ class UserControllerTest extends KkambbakDocumentApiTester {
     }
 
     @Test
+    void registerKoreanTest() throws Exception {
+        // given
+        doNothing().when(userService).validateKoreanNameRequest(any());
+        doNothing().when(userService).registerKorean(anyLong(), any());
+
+        // when & then
+        this.mockMvc.perform(post("/api/v1/users/register-korean")
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json")
+                        .content(toJson(Map.of(
+                                "preferredNameMeaning", "My name means to shine brightly like light and bring warmth to others.",
+                                "personalityOrImage", "I'm full of bright energy with a playful, charming vibe."
+                        ))))
+                .andExpect(status().isOk())
+                .andDo(document("user-register-korean",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("Users")
+                                        .summary("한국어 이름 생성")
+                                        .description("원하는 이름의 의미와 본인이 생각하는 자기의 성격/이미지 설명을 저장합니다.")
+                                        .requestHeaders(
+                                                headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .requestFields(
+                                                fieldWithPath("preferredNameMeaning").type(JsonFieldType.STRING).description("선호하는 이름 의미"),
+                                                fieldWithPath("personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명")
+                                        )
+                                        .responseFields(
+                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.NULL).description("응답 본문 (null)").optional()
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
     void getProfileTest() throws Exception {
         // given
         GetProfileDto mockProfile = GetProfileDto.builder()
