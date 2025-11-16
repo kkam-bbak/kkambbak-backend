@@ -10,11 +10,11 @@ import com.kkambbak.core.repository.payment.SubscriptionPlanRepository;
 import com.kkambbak.core.repository.payment.SubscriptionRepository;
 import com.kkambbak.core.service.UserRoleService;
 import com.kkambbak.domain.payment.dto.SubscriptionDto;
+import com.kkambbak.domain.payment.dto.SubscriptionPlanDto;
 import com.kkambbak.domain.payment.exception.PlanNotFoundException;
 import com.kkambbak.domain.payment.exception.SubscriptionNotFoundException;
 import com.kkambbak.domain.payment.exception.SubscriptionAlreadyCancelledException;
 import com.kkambbak.domain.payment.exception.SubscriptionAlreadyExpiredException;
-import com.kkambbak.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -168,4 +170,11 @@ public class SubscriptionService {
         return SubscriptionDto.from(subscription);
     }
     
+    @Transactional(readOnly = true)
+    public List<SubscriptionPlanDto> getAllSubscriptionPlans() {
+        return subscriptionPlanRepository.findAll().stream()
+                .map(SubscriptionPlanDto::from)
+                .collect(Collectors.toList());
+    }
+
 }
