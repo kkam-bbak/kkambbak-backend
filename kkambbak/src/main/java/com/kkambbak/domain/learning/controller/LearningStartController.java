@@ -1,7 +1,7 @@
 package com.kkambbak.domain.learning.controller;
 
 import com.kkambbak.domain.learning.dto.LearningStartDto;
-import com.kkambbak.domain.learning.service.LearningStartService;
+import com.kkambbak.domain.learning.facade.LearningFacade;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class LearningStartController {
 
-    private final LearningStartService learningStartService;
+    private final LearningFacade learningFacade;
 
     @PostMapping("/sessions/{sessionId}/start")
     public ApiResponse<LearningStartDto.StartResponse> start(
@@ -21,13 +21,18 @@ public class LearningStartController {
             @PathVariable Long sessionId,
             @RequestBody(required = false) LearningStartDto.StartRequest body
     ) {
+
         Long userId = userDetails.getUserId();
 
         if (body == null) {
             body = LearningStartDto.StartRequest.builder().build();
         }
 
-        var response = learningStartService.start(userId, sessionId, body);
+        var response = learningFacade.startLearning(
+                userId,
+                sessionId,
+                body
+        );
 
         return ApiResponse.ok(response);
     }

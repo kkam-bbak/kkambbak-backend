@@ -2,9 +2,8 @@ package com.kkambbak.domain.learning.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.kkambbak.KkambbakDocumentApiTester;
-import com.kkambbak.core.entity.learning.enums.LearningMode;
 import com.kkambbak.domain.learning.dto.LearningStartDto;
-import com.kkambbak.domain.learning.service.LearningStartService;
+import com.kkambbak.domain.learning.facade.LearningFacade;
 import org.junit.jupiter.api.Test;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,137 +25,77 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LearningStartControllerTest extends KkambbakDocumentApiTester {
 
     @MockitoBean
-    private LearningStartService learningStartService;
+    private LearningFacade learningFacade;
 
     @Test
     void startLearning_AllMode_Test() throws Exception {
-        // given
-        LearningStartDto.StartResponse.FirstVocabulary firstVocab =
-                LearningStartDto.StartResponse.FirstVocabulary.builder()
-                        .vocabularyId(1L)
-                        .korean("사과")
-                        .romanization("sa-gwa")
-                        .english("apple")
-                        .imageUrl("https://pub-xxxx.r2.dev/images/apple.png")
-                        .build();
 
-        LearningStartDto.StartResponse mockResponse =
-                LearningStartDto.StartResponse.builder()
-                        .sessionId(5L)
-                        .resultId(103L)
-                        .vocabIds(List.of(1L, 2L, 3L, 4L, 5L))
-                        .totalVocabularyCount(5)
-                        .baseResultId(null)
-                        .firstVocabulary(firstVocab)
-                        .build();
+        var firstVocab = LearningStartDto.StartResponse.FirstVocabulary.builder()
+                .vocabularyId(1L)
+                .korean("사과")
+                .romanization("sa-gwa")
+                .english("apple")
+                .imageUrl("https://cdn/image.png")
+                .build();
 
-        given(learningStartService.start(anyLong(), anyLong(), any()))
+        var mockResponse = LearningStartDto.StartResponse.builder()
+                .sessionId(5L)
+                .sessionTitle("Topik 1")
+                .resultId(103L)
+                .vocabIds(List.of(1L, 2L, 3L, 4L, 5L))
+                .totalVocabularyCount(5)
+                .baseResultId(null)
+                .firstVocabulary(firstVocab)
+                .build();
+
+        given(learningFacade.startLearning(anyLong(), anyLong(), any()))
                 .willReturn(mockResponse);
 
-        // when & then
-        this.mockMvc.perform(post("/api/v1/learning/sessions/{sessionId}/start", 5L)
-                        .header("Authorization", "Bearer access_token_example")
+        mockMvc.perform(post("/api/v1/learning/sessions/{sessionId}/start", 5L)
+                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
                         .contentType("application/json")
-                        .content(toJson(Map.of(
-                                "mode", "ALL"
-                        ))))
+                        .content(toJson(Map.of("mode", "ALL"))))
                 .andExpect(status().isOk())
-                .andDo(document("learning-start-all",
+                .andDo(document(
+                        "learning-start-all",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Learning")
-                                        .summary("학습 시작 - 전체 학습 (ALL 모드)")
+                                        .summary("학습 시작")
                                         .description("""
-                                        세션 학습을 시작하고 새로운 학습 결과(LearningResult)를 생성합니다.
-                                        #### 1. 전체 학습 (ALL)
-                                        - 세션의 모든 단어를 학습합니다.
-                                        - mode를 생략하거나 "ALL"로 지정하면 됩니다.
-                                        - baseResultId는 null입니다.
-                                        - 세션에 포함된 모든 단어가 vocabIds에 포함됩니다.
-                                        
-                                        #### 2. 오답만 학습 (WRONG_ONLY)
-                                        - 이전 학습에서 틀린 단어만 다시 학습합니다.
-                                        - mode를 "WRONG_ONLY"로 지정해야 합니다.
-                                        - **baseResultId 필수**: 기준이 되는 이전 학습 결과 ID를 지정합니다.
-                                        - 해당 결과에서 틀린 단어만 vocabIds에 포함됩니다.
-                                        - 응답의 baseResultId에 기준 결과 ID가 포함됩니다.
+                                        선택한 세션 학습을 시작하고 이번 학습에 사용할 단어 목록 및 첫 단어 정보를 반환합니다.
+                                
+                                        mode
+                                        - ALL (기본값) : 세션에 포함된 모든 단어 학습
+                                        - WRONG_ONLY : 이전 학습에서 틀린 단어만 다시 학습 (이전 학습 결과 ID인 baseResultId 필수)
                                         """)
                                         .requestHeaders(
-                                                headerWithName("Authorization")
-                                                        .description("Bearer 토큰")
+                                                headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
                                         )
                                         .pathParameters(
-                                                parameterWithName("sessionId")
-                                                        .description("학습할 세션 ID")
+                                                parameterWithName("sessionId").description("학습을 시작할 세션 ID")
                                         )
                                         .requestFields(
                                                 fieldWithPath("mode")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("학습 모드\n\n" +
-                                                                "- `ALL`: 전체 학습 (기본값)\n" +
-                                                                "- `WRONG_ONLY`: 오답만 학습")
-                                                        .optional(),
-                                                fieldWithPath("baseResultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("오답 재학습 시 기준이 되는 결과 ID\n\n" +
-                                                                "**WRONG_ONLY 모드일 때만 필수**")
+
                                                         .optional()
+                                                        .description("학습 모드 (ALL / WRONG_ONLY). 기본값은 ALL")
                                         )
                                         .responseFields(
-                                                fieldWithPath("status.statusCode")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 코드"),
-                                                fieldWithPath("status.message")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 메시지"),
-                                                fieldWithPath("status.description")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 설명")
-                                                        .optional(),
-                                                fieldWithPath("body")
-                                                        .type(JsonFieldType.OBJECT)
-                                                        .description("응답 데이터"),
-                                                fieldWithPath("body.sessionId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("학습 중인 세션 ID"),
-                                                fieldWithPath("body.resultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("새로 생성된 학습 결과 ID\n\n" +
-                                                                "Grade/Complete API 호출 시 사용"),
-                                                fieldWithPath("body.vocabIds")
-                                                        .type(JsonFieldType.ARRAY)
-                                                        .description("학습할 단어 ID 목록\n\n" +
-                                                                "- ALL 모드: 세션의 모든 단어\n" +
-                                                                "- WRONG_ONLY: 틀린 단어만\n" +
-                                                                "- 세션 순서대로 정렬"),
-                                                fieldWithPath("body.totalVocabularyCount")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("총 학습할 단어 개수"),
-                                                fieldWithPath("body.baseResultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("오답 재학습의 기준이 된 결과 ID\n\n" +
-                                                                "- ALL 모드: `null`\n" +
-                                                                "- WRONG_ONLY: 기준 결과 ID")
-                                                        .optional(),
-                                                fieldWithPath("body.firstVocabulary")
-                                                        .type(JsonFieldType.OBJECT)
-                                                        .description("첫 번째 단어 정보\n\n" +
-                                                                "바로 화면에 표시할 수 있도록 상세 정보 포함"),
-                                                fieldWithPath("body.firstVocabulary.vocabularyId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("단어 ID"),
-                                                fieldWithPath("body.firstVocabulary.korean")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("한국어 단어"),
-                                                fieldWithPath("body.firstVocabulary.romanization")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("로마자 표기 (발음 참고용)"),
-                                                fieldWithPath("body.firstVocabulary.english")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("영어 뜻"),
-                                                fieldWithPath("body.firstVocabulary.imageUrl")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("이미지 URL")
+                                                fieldWithPath("status.statusCode").description("상태 코드"),
+                                                fieldWithPath("status.message").description("상태 메시지"),
+                                                fieldWithPath("status.description").optional().description("추가 상태 설명"),
+                                                fieldWithPath("body.sessionId").description("세션 ID"),
+                                                fieldWithPath("body.sessionTitle").description("세션 제목 (예: 'Topik 1')"),
+                                                fieldWithPath("body.resultId").description("이번 학습 결과 ID"),
+                                                fieldWithPath("body.vocabIds").description("이번 학습에 사용될 단어 ID 목록"),
+                                                fieldWithPath("body.totalVocabularyCount").description("전체 학습 단어 수"),
+                                                fieldWithPath("body.baseResultId").optional().description("WRONG_ONLY 모드인 경우 기준이 되는 이전 결과 ID, ALL 모드이면 null"),
+                                                fieldWithPath("body.firstVocabulary.vocabularyId").description("첫 학습 단어 ID"),
+                                                fieldWithPath("body.firstVocabulary.korean").description("첫 학습 단어 (한국어)"),
+                                                fieldWithPath("body.firstVocabulary.romanization").description("첫 학습 단어 로마자 표기"),
+                                                fieldWithPath("body.firstVocabulary.english").description("첫 학습 단어 영어 뜻"),
+                                                fieldWithPath("body.firstVocabulary.imageUrl").description("첫 학습 단어 이미지 URL")
                                         )
                                         .build()
                         )
@@ -165,121 +104,78 @@ class LearningStartControllerTest extends KkambbakDocumentApiTester {
 
     @Test
     void startLearning_WrongOnlyMode_Test() throws Exception {
-        // given
-        LearningStartDto.StartResponse.FirstVocabulary firstVocab =
-                LearningStartDto.StartResponse.FirstVocabulary.builder()
-                        .vocabularyId(3L)
-                        .korean("딸기")
-                        .romanization("ttal-gi")
-                        .english("strawberry")
-                        .imageUrl("https://pub-xxxx.r2.dev/images/strawberry.png")
-                        .build();
 
-        LearningStartDto.StartResponse mockResponse =
-                LearningStartDto.StartResponse.builder()
-                        .sessionId(5L)
-                        .resultId(104L)
-                        .vocabIds(List.of(3L, 7L, 12L))
-                        .totalVocabularyCount(3)
-                        .baseResultId(100L)
-                        .firstVocabulary(firstVocab)
-                        .build();
+        var firstVocab = LearningStartDto.StartResponse.FirstVocabulary.builder()
+                .vocabularyId(10L)
+                .korean("학교")
+                .romanization("hak-gyo")
+                .english("school")
+                .imageUrl("https://cdn/image-school.png")
+                .build();
 
-        given(learningStartService.start(anyLong(), anyLong(), any()))
+        var mockResponse = LearningStartDto.StartResponse.builder()
+                .sessionId(5L)
+                .sessionTitle("Topik 1")
+                .resultId(201L)               // 새로운 학습 결과 ID
+                .vocabIds(List.of(10L, 11L))  // 이전에 틀렸던 단어들만
+                .totalVocabularyCount(2)
+                .baseResultId(103L)           // 기준이 되는 이전 학습 결과
+                .firstVocabulary(firstVocab)
+                .build();
+
+        given(learningFacade.startLearning(anyLong(), anyLong(), any()))
                 .willReturn(mockResponse);
 
-        // when & then
-        this.mockMvc.perform(post("/api/v1/learning/sessions/{sessionId}/start", 5L)
-                        .header("Authorization", "Bearer access_token_example")
+        mockMvc.perform(post("/api/v1/learning/sessions/{sessionId}/start", 5L)
+                        .header(AUTH_HEADER, TEST_ACCESS_TOKEN)
                         .contentType("application/json")
                         .content(toJson(Map.of(
                                 "mode", "WRONG_ONLY",
-                                "baseResultId", 100L
+                                "baseResultId", 103L
                         ))))
                 .andExpect(status().isOk())
-                .andDo(document("learning-start-wrong-only",
+                .andDo(document(
+                        "learning-start-wrong-only",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Learning")
-                                        .summary("학습 시작 - 오답만 학습 (WRONG_ONLY 모드)")
+                                        .summary("학습 시작 (WRONG_ONLY 모드)")
                                         .description("""
-                                        ## 학습 시작 API - 오답 재학습
-                                        이전 학습에서 틀린 단어만 다시 학습합니다.
-                                        
-                                        ### 오답만 학습 (WRONG_ONLY) 모드
-                                        - 이전 학습 결과를 기준으로 틀린 단어만 추출합니다.
-                                        - **baseResultId 필수**: 기준이 되는 학습 결과 ID
-                                        - 틀린 단어만 vocabIds에 포함됩니다.
-                                        - 세션 순서대로 정렬되어 반환됩니다.
-                                        """)
+                                                이전 학습 결과를 기준으로, 그때 틀렸던 단어만 다시 학습을 시작합니다.
+
+                                                mode:
+                                                - WRONG_ONLY: 꼭 지정해야 하며, baseResultId(기준이 되는 이전 학습 결과 ID)를 함께 전달해야 합니다.
+                                                """)
                                         .requestHeaders(
-                                                headerWithName("Authorization")
-                                                        .description("Bearer 토큰")
+                                                headerWithName(AUTH_HEADER).description("Bearer 액세스 토큰")
                                         )
                                         .pathParameters(
-                                                parameterWithName("sessionId")
-                                                        .description("학습할 세션 ID")
+                                                parameterWithName("sessionId").description("학습을 시작할 세션 ID")
                                         )
                                         .requestFields(
                                                 fieldWithPath("mode")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("`WRONG_ONLY` 고정"),
+                                                        .description("WRONG_ONLY 로 고정 (이전 학습에서 틀린 단어만 다시 학습)"),
                                                 fieldWithPath("baseResultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("기준이 되는 학습 결과 ID (필수)\n\n" +
-                                                                "해당 결과에서 틀린 단어만 추출")
+                                                        .description("이전 학습 결과 ID. 해당 결과에서 틀린 단어들만 이번 학습에 사용됩니다.")
                                         )
                                         .responseFields(
-                                                fieldWithPath("status.statusCode")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 코드"),
-                                                fieldWithPath("status.message")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 메시지"),
-                                                fieldWithPath("status.description")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("상태 설명")
-                                                        .optional(),
-                                                fieldWithPath("body")
-                                                        .type(JsonFieldType.OBJECT)
-                                                        .description("응답 데이터"),
-                                                fieldWithPath("body.sessionId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("학습 중인 세션 ID"),
-                                                fieldWithPath("body.resultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("새로 생성된 학습 결과 ID"),
-                                                fieldWithPath("body.vocabIds")
-                                                        .type(JsonFieldType.ARRAY)
-                                                        .description("틀린 단어 ID 목록 (세션 순서 유지)"),
-                                                fieldWithPath("body.totalVocabularyCount")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("틀린 단어 개수"),
-                                                fieldWithPath("body.baseResultId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("기준이 된 학습 결과 ID"),
-                                                fieldWithPath("body.firstVocabulary")
-                                                        .type(JsonFieldType.OBJECT)
-                                                        .description("첫 번째 오답 단어 정보"),
-                                                fieldWithPath("body.firstVocabulary.vocabularyId")
-                                                        .type(JsonFieldType.NUMBER)
-                                                        .description("단어 ID"),
-                                                fieldWithPath("body.firstVocabulary.korean")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("한국어 단어"),
-                                                fieldWithPath("body.firstVocabulary.romanization")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("로마자 표기"),
-                                                fieldWithPath("body.firstVocabulary.english")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("영어 뜻"),
-                                                fieldWithPath("body.firstVocabulary.imageUrl")
-                                                        .type(JsonFieldType.STRING)
-                                                        .description("이미지 URL")
+                                                fieldWithPath("status.statusCode").description("상태 코드"),
+                                                fieldWithPath("status.message").description("상태 메시지"),
+                                                fieldWithPath("status.description").optional().description("추가 상태 설명"),
+                                                fieldWithPath("body.sessionId").description("세션 ID"),
+                                                fieldWithPath("body.sessionTitle").description("세션 제목 (예: 'Topik 1')"),
+                                                fieldWithPath("body.resultId").description("이번 학습 결과 ID"),
+                                                fieldWithPath("body.vocabIds").description("이번 학습에 사용될 단어 ID 목록 (이전 학습에서 틀린 단어들만 포함)"),
+                                                fieldWithPath("body.totalVocabularyCount").description("이번에 다시 풀어야 하는 단어 수"),
+                                                fieldWithPath("body.baseResultId").description("기준이 된 이전 학습 결과 ID"),
+                                                fieldWithPath("body.firstVocabulary.vocabularyId").description("첫 학습 단어 ID"),
+                                                fieldWithPath("body.firstVocabulary.korean").description("첫 학습 단어 (한국어)"),
+                                                fieldWithPath("body.firstVocabulary.romanization").description("첫 학습 단어 로마자 표기"),
+                                                fieldWithPath("body.firstVocabulary.english").description("첫 학습 단어 영어 뜻"),
+                                                fieldWithPath("body.firstVocabulary.imageUrl").description("첫 학습 단어 이미지 URL")
                                         )
                                         .build()
                         )
                 ));
     }
-
 }

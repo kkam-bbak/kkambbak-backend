@@ -2,7 +2,7 @@ package com.kkambbak.domain.learning.controller;
 
 import com.kkambbak.core.entity.survey.enums.CategoryType;
 import com.kkambbak.domain.learning.dto.LearningSessionListResponse;
-import com.kkambbak.domain.learning.service.LearningListService;
+import com.kkambbak.domain.learning.facade.LearningFacade;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 @RequiredArgsConstructor
 public class LearningListController {
 
-    private final LearningListService learningListService;
+    private final LearningFacade learningFacade;
 
     @GetMapping("/sessions")
     public ApiResponse<LearningSessionListResponse> getLearningList(
@@ -25,9 +25,13 @@ public class LearningListController {
     ) {
         Long userId = userDetails.getUserId();
 
-        LearningSessionListResponse response = learningListService.getLearningList(
-                userId, category, cursor, limit
+        var response = learningFacade.getLearningList(
+                userId,
+                category,
+                cursor,
+                limit
         );
+
         return ApiResponse.ok(response);
     }
 }

@@ -4,13 +4,6 @@ import com.kkambbak.core.entity.learning.enums.GradeAction;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-/**
- * 발음 학습 채점 API
- *
- * - POST /api/v1/learning/grade
- * - action = GRADE           : 정답일때 다음 단어로 이동, 오답일 때 try agin 버튼 누르면 다음 단어로 이동
- * - action = NEXT_AFTER_WRONG: 오답일때 next버튼 누르면 오답 확정 + 다음 단어로 이동
- */
 public class LearningGradeDto {
 
     @Getter
@@ -25,44 +18,19 @@ public class LearningGradeDto {
         // 현재 채점중인 단어 id (Vocabulary.id = itemId)
         @NotNull
         private Long itemId;
-
-        @NotNull
-        private String audio;
     }
 
-    // ===================== Response =====================
 
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class GradeResponse {
-
         private boolean correct;
-
-        /**
-         *  이번 grade 요청으로 학습 포커스가 다음 단어로 넘어갔는지 여부
-         * - true  : 다음 단어로 이동
-         * - false : 현재 단어에 그대로 머무름
-         */
-        private boolean moved;
-
-        /**
-         * 현재 세션의 학습을 모두 끝냈는지 여부
-         * - true  : 마지막 단어까지 처리 완료
-         * - false : 아직 남은 단어가 있음
-         */
-        private boolean finished;
-
-        /**
-         * 다음에 학습할 단어 정보
-         * - moved == true && finished == false 인 경우 채워짐
-         * - 마지막 단어를 끝낸 경우(finished == true)에는 null 가능
-         */
-        private Next next;
-
-        // 오답 확정 시, 정답을 보여주기 위한 정보
-        private CorrectAnswer correctAnswer;
+        private boolean moved;  //다음 문제로 넘어갈 수 있는지 여부
+        private boolean finished; // 학습이 끝났는지 여부
+        private Next next; // 다음 문제에서 학습할 단어 정보
+        private CorrectAnswer correctAnswer; // 오답 확정 시, 정답에 대한 단어의 정보를 보여주기 위해
 
         public static GradeResponse of(boolean correct,
                                        boolean moved,

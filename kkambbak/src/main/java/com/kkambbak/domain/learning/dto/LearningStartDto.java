@@ -1,5 +1,6 @@
 package com.kkambbak.domain.learning.dto;
 
+import com.kkambbak.core.entity.learning.Session;
 import com.kkambbak.core.entity.learning.enums.LearningMode;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -15,7 +16,7 @@ public class LearningStartDto {
         @Builder.Default
         private LearningMode mode = LearningMode.ALL;
 
-        private Long baseResultId; // 틀린 것만 학습(wrong_only)시 기준이 되는 결과 id
+        private Long baseResultId; // 틀린 것만 학습(WRONG_ONLY)시 기준이 되는 결과 id
     }
 
     @Getter
@@ -29,16 +30,19 @@ public class LearningStartDto {
         private int totalVocabularyCount;
         private Long baseResultId;
         private FirstVocabulary firstVocabulary;
+        private String sessionTitle;
 
         public static StartResponse of(Long sessionId,
                                        Long resultId,
                                        List<Long> vocabIds,
                                        FirstVocabulary firstVocabulary,
-                                       Long baseResultId) {
+                                       Long baseResultId,
+                                       Session session) {
             return StartResponse.builder()
                     .sessionId(sessionId)
                     .resultId(resultId)
                     .vocabIds(vocabIds)
+                    .sessionTitle(session.getTitle())
                     .totalVocabularyCount(vocabIds == null ? 0 : vocabIds.size())
                     .firstVocabulary(firstVocabulary)
                     .baseResultId(baseResultId)
