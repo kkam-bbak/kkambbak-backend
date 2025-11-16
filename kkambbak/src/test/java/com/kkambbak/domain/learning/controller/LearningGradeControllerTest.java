@@ -1,7 +1,6 @@
 package com.kkambbak.domain.learning.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kkambbak.KkambbakDocumentApiTester;
 import com.kkambbak.core.entity.learning.enums.GradeAction;
 import com.kkambbak.domain.learning.dto.LearningGradeDto;
@@ -17,8 +16,8 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.multipart;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,19 +92,20 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
-                                                fieldWithPath("status.description").optional().type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("status.description").optional().type(JsonFieldType.STRING).description("상태 설명"),
 
                                                 fieldWithPath("body.correct").type(JsonFieldType.BOOLEAN).description("현재 문제 정답 여부"),
                                                 fieldWithPath("body.moved").type(JsonFieldType.BOOLEAN).description("다음 문제로 이동했는지 여부"),
                                                 fieldWithPath("body.finished").type(JsonFieldType.BOOLEAN).description("학습 세션이 종료되었는지 여부"),
-                                                fieldWithPath("body.next").optional().type(JsonFieldType.OBJECT).description("다음 학습 단어 정보").optional(),
-                                                fieldWithPath("body.next.itemId").optional().type(JsonFieldType.NUMBER).description("다음 단어 ID").optional(),
-                                                fieldWithPath("body.next.korean").optional().type(JsonFieldType.STRING).description("다음 단어 (한국어)").optional(),
-                                                fieldWithPath("body.next.romanization").optional().type(JsonFieldType.STRING).description("다음 단어 로마자 표기").optional(),
-                                                fieldWithPath("body.next.english").optional().type(JsonFieldType.STRING).description("다음 단어 영어").optional(),
-                                                fieldWithPath("body.next.imageUrl").optional().type(JsonFieldType.STRING).description("다음 단어 이미지 URL").optional(),
 
-                                                fieldWithPath("body.correctAnswer").optional().type(JsonFieldType.OBJECT).description("오답 시 정답 정보").optional()
+                                                fieldWithPath("body.next").optional().type(JsonFieldType.OBJECT).description("다음 학습 단어 정보"),
+                                                fieldWithPath("body.next.itemId").optional().type(JsonFieldType.NUMBER).description("다음 단어 ID"),
+                                                fieldWithPath("body.next.korean").optional().type(JsonFieldType.STRING).description("다음 단어 (한국어)"),
+                                                fieldWithPath("body.next.romanization").optional().type(JsonFieldType.STRING).description("다음 단어 로마자 표기"),
+                                                fieldWithPath("body.next.english").optional().type(JsonFieldType.STRING).description("다음 단어 영어"),
+                                                fieldWithPath("body.next.imageUrl").optional().type(JsonFieldType.STRING).description("다음 단어 이미지 URL"),
+
+                                                fieldWithPath("body.correctAnswer").optional().type(JsonFieldType.OBJECT).description("오답 시 정답 정보")
                                         )
                                         .build()
                         )

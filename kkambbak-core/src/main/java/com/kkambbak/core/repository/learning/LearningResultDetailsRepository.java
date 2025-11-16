@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface LearningResultDetailsRepository extends JpaRepository<LearningResultDetail, Long> {
 
-    // 틀리 단어 ID를 세션 ID ASC 순서대로 가져오기
+    // 틀린 단어 ID를 세션 ID ASC 순서대로 가져오기
     @Query("""
     select sv.vocabulary.id
       from LearningResultDetail d

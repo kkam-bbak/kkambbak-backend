@@ -27,7 +27,7 @@ public class LearningResultDetail extends BaseEntity {
     @Column(name = "is_correct", nullable = false)
     private boolean correct;
 
-    @Column(name = "user_answer", columnDefinition = "TEXT")
+    @Column(name = "user_answer", columnDefinition = "TEXT", nullable  = true)
     private String userAnswer;
 
     public void update(boolean correct, String userAnswer) {

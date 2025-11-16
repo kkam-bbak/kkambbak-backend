@@ -15,10 +15,11 @@ import com.kkambbak.core.repository.learning.VocabularyRepository;
 import com.kkambbak.domain.learning.dto.LearningGradeDto;
 import com.kkambbak.domain.learning.exception.InvalidGradeAttemptException;
 import com.kkambbak.domain.learning.exception.LearningDataInconsistencyException;
-import com.kkambbak.domain.learning.exception.LearningResultNotFoundException;
+import com.kkambbak.domain.learning.exception.ResultNotFoundException;
 import com.kkambbak.domain.learning.exception.SessionNotFoundException;
 import com.kkambbak.domain.roleplay.service.AudioConvertService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -75,7 +77,7 @@ public class LearningGradeService {
 
         return results.stream()
                 .max(Comparator.comparingLong(LearningResult::getId))
-                .orElseThrow(() -> new LearningResultNotFoundException(
+                .orElseThrow(() -> new ResultNotFoundException(
                         "학습 결과를 찾을 수 없습니다. userId=%d, sessionId=%d"
                                 .formatted(userId, sessionId)
                 ));
@@ -117,7 +119,7 @@ public class LearningGradeService {
 
     /**
      * Azure STT + 발음 평가 기반 정답 여부 판단
-     * (NEXT_AFTER_WRONG인 경우는 오답 처리 후 다음 문제로 넘어가기 때문에 판단하지 않음)
+     * (NEXT_AFTER_WRONG인 경우는 오답 처리 후 다음 문제로 넘어가기 때문에 평가하지 않음)
      */
     public boolean evaluateCorrectness(
             GradeAction action,
@@ -156,7 +158,10 @@ public class LearningGradeService {
             throw new RuntimeException("음성 파일 처리 중 오류가 발생했습니다.", e);
         } finally {
             if (wavFile != null && wavFile.exists()) {
-                boolean ignored = wavFile.delete();
+                boolean deleted = wavFile.delete();
+                if (!deleted) {
+                    log.warn("임시 WAV 파일 삭제 실패: {}", wavFile.getAbsolutePath());
+                }
             }
         }
     }
@@ -169,7 +174,7 @@ public class LearningGradeService {
             GradeAction action,
             boolean isCorrect
     ) {
-        saveDetail(result, vocab, isCorrect, "dummy"); // userAnswer는 아직 dummy
+        saveDetail(result, vocab, isCorrect, null);
 
         if (action == GradeAction.GRADE && isCorrect) {
             result.addCorrectCount();

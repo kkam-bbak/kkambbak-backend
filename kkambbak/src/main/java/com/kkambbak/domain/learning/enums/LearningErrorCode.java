@@ -16,8 +16,7 @@ public enum LearningErrorCode implements ResponseCode {
     LEARNING_DATA_INCONSISTENCY("L006", "Learning data inconsistency"),   // 학습 데이터 구조/개수 이상
     RESULT_NOT_FOUND("L007", "Learning result not found"),                // 기존 결과 없음
     NO_WRONG_VOCABULARY("L008", "No wrong vocabulary to retry"),         // 오답이 없어 WRONG_ONLY 불가
-    LEARNING_RESULT_NOT_FOUND("L009", "Learning result not found"),    // 기준/최신 학습 결과 없음
-    INVALID_GRADE_ATTEMPT("L010", "Invalid grade attempt");             // orderIndex 범위/불일치, mode 이상 등
+    INVALID_GRADE_ATTEMPT("L009", "Invalid grade attempt");             // orderIndex 범위/불일치, mode 이상 등
 
     private final String statusCode;
     private final String message;

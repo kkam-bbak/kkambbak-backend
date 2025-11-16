@@ -9,11 +9,7 @@ import com.kkambbak.core.repository.learning.SessionRepository;
 import com.kkambbak.core.repository.learning.SessionVocabularyRepository;
 import com.kkambbak.core.repository.learning.VocabularyRepository;
 import com.kkambbak.domain.learning.dto.LearningStartDto;
-import com.kkambbak.domain.learning.exception.InvalidStartParamException;
-import com.kkambbak.domain.learning.exception.LearningDataInconsistencyException;
-import com.kkambbak.domain.learning.exception.LearningResultNotFoundException;
-import com.kkambbak.domain.learning.exception.NoWrongVocabularyException;
-import com.kkambbak.domain.learning.exception.SessionNotFoundException;
+import com.kkambbak.domain.learning.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,7 +69,7 @@ public class LearningStartService {
 
         if (!Objects.equals(base.getUserId(), userId)
                 || !Objects.equals(base.getSession().getId(), sessionId)) {
-            throw new LearningResultNotFoundException(
+            throw new ResultNotFoundException(
                     "해당 사용자의 세션 결과가 아닙니다. userId=%d, sessionId=%d, baseResultId=%d"
                             .formatted(userId, sessionId, baseResultId)
             );
@@ -113,7 +109,7 @@ public class LearningStartService {
     // 기존 결과 로딩 (WRONG_ONLY baseResultId 검증에 사용)
     private LearningResult mustLoadLearningResult(Long baseResultId) {
         return learningResultRepository.findById(baseResultId)
-                .orElseThrow(() -> new LearningResultNotFoundException(
+                .orElseThrow(() -> new ResultNotFoundException(
                         "틀린 것만 학습(wrong_only)시 기준이 되는 결과 id를 찾을 수 없습니다. baseResultId=" + baseResultId
                 ));
     }
