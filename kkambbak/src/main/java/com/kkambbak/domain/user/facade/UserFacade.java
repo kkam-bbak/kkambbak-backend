@@ -2,6 +2,7 @@ package com.kkambbak.domain.user.facade;
 
 import com.kkambbak.core.entity.user.enums.Gender;
 import com.kkambbak.domain.user.dto.UpdateProfileDto;
+import com.kkambbak.domain.user.dto.registerKoreanDto;
 import com.kkambbak.domain.user.exception.ProfileUpdateException;
 import com.kkambbak.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,18 @@ public class UserFacade {
             userService.register(userId, request, gender);
         } catch (Exception e) {
             log.error("Failed to register profile for userId: {}", userId, e);
+            throw new ProfileUpdateException();
+        }
+    }
+
+    @Transactional
+    public void registerKorean(Long userId, registerKoreanDto request) {
+        userService.validateKoreanNameRequest(request);
+
+        try {
+            userService.registerKorean(userId, request);
+        } catch (Exception e) {
+            log.error("Failed to register korean name for userId: {}", userId, e);
             throw new ProfileUpdateException();
         }
     }

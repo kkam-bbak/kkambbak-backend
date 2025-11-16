@@ -206,37 +206,75 @@ class UserControllerTest extends KkambbakDocumentApiTester {
         doNothing().when(userService).register(anyLong(), any(UpdateProfileDto.class), any(Gender.class));
 
         // when & then
-        this.mockMvc.perform(put("/api/v1/users/register")
+        this.mockMvc.perform(patch("/api/v1/users/register")
                         .header("Authorization", "Bearer access_token_example")
                         .contentType("application/json")
                         .content(toJson(Map.of(
-                                "name", "KimJunHyeong",
+                                "name", "Kim Jun Hyeong",
                                 "gender", "MALE",
                                 "countryOfOrigin", "South Korea",
-                                "personalityOrImage", "I'm full of bright energy with a playful, charming vibe.",
-                                "preferredNameMeaning", "My name means to shine brightly like light and bring warmth to others."
+                                "profileImage", "https://example.com/profile.jpg"
                         ))))
                 .andExpect(status().isOk())
-                .andDo(document("user-update-profile",
+                .andDo(document("user-register",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Users")
-                                        .summary("회원가입 ")
-                                        .description("소셜 로그인 또는 게스트 로그인 후 회원가입 진행합니다. 기존 데이터가 있으면 새로운 값으로 덮어씁니다.")
+                                        .summary("사용자 정보 회원가입")
+                                        .description("소셜 로그인 또는 게스트 로그인 후 회원가입 진행합니다. 이름, 성별, 국가는 필수이며 프로필 사진 URL은 선택사항입니다.")
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
                                         )
                                         .requestFields(
-                                                fieldWithPath("name").type(JsonFieldType.STRING).description("영문 이름 (성+이름)"),
-                                                fieldWithPath("gender").type(JsonFieldType.STRING).description("성별 (MALE, FEMALE, OTHER)"),
-                                                fieldWithPath("countryOfOrigin").type(JsonFieldType.STRING).description("국가명 (예: South Korea, USA)"),
-                                                fieldWithPath("personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명 (AI 전달용 문장)"),
-                                                fieldWithPath("preferredNameMeaning").type(JsonFieldType.STRING).description("선호하는 이름 의미 (AI 전달용 문장)")
+                                                fieldWithPath("name").type(JsonFieldType.STRING).description("영문 이름 (필수)"),
+                                                fieldWithPath("gender").type(JsonFieldType.STRING).description("성별 (필수, MALE, FEMALE)"),
+                                                fieldWithPath("countryOfOrigin").type(JsonFieldType.STRING).description("국가명 (필수)"),
+                                                fieldWithPath("profileImage").type(JsonFieldType.STRING).description("프로필 사진 URL (선택)").optional()
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
-                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional()
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.NULL).description("응답 본문 (null)").optional()
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
+    void registerKoreanTest() throws Exception {
+        // given
+        doNothing().when(userService).validateKoreanNameRequest(any());
+        doNothing().when(userService).registerKorean(anyLong(), any());
+
+        // when & then
+        this.mockMvc.perform(post("/api/v1/users/register-korean")
+                        .header("Authorization", "Bearer access_token_example")
+                        .contentType("application/json")
+                        .content(toJson(Map.of(
+                                "preferredNameMeaning", "My name means to shine brightly like light and bring warmth to others.",
+                                "personalityOrImage", "I'm full of bright energy with a playful, charming vibe."
+                        ))))
+                .andExpect(status().isOk())
+                .andDo(document("user-register-korean",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("Users")
+                                        .summary("한국어 이름 생성을 위한 회원가입")
+                                        .description("원하는 이름의 의미와 본인이 생각하는 자기의 성격/이미지 설명을 저장합니다.")
+                                        .requestHeaders(
+                                                headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .requestFields(
+                                                fieldWithPath("preferredNameMeaning").type(JsonFieldType.STRING).description("선호하는 이름 의미"),
+                                                fieldWithPath("personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명")
+                                        )
+                                        .responseFields(
+                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
+                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
+                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
+                                                fieldWithPath("body").type(JsonFieldType.NULL).description("응답 본문 (null)").optional()
                                         )
                                         .build()
                         )
