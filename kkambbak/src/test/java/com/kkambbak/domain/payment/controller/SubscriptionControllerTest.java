@@ -122,7 +122,7 @@ class SubscriptionControllerTest extends KkambbakDocumentApiTester {
         List<SubscriptionPlanDto> mockResponse = Arrays.asList(
                 SubscriptionPlanDto.builder()
                         .id(1L)
-                        .name("Basic")
+                        .name("Standard")
                         .price(4900L)
                         .build(),
                 SubscriptionPlanDto.builder()
