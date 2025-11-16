@@ -168,8 +168,7 @@ public class UserService {
                 request.getName(),
                 gender,
                 request.getCountryOfOrigin(),
-                request.getPersonalityOrImage(),
-                request.getPreferredNameMeaning()
+                request.getProfileImage()
         );
 
         userRepository.save(user);
@@ -188,14 +187,6 @@ public class UserService {
         }
         if (request.getCountryOfOrigin().length() > 100) {
             throw new ProfileValidationException("국가는 100자 이하여야 합니다");
-        }
-
-        if (request.getPersonalityOrImage() == null || request.getPersonalityOrImage().isBlank()) {
-            throw new ProfileValidationException("Personality, Image는 필수입니다");
-        }
-
-        if (request.getPreferredNameMeaning() == null || request.getPreferredNameMeaning().isBlank()) {
-            throw new ProfileValidationException("선호하는 이름 의미는 필수입니다");
         }
 
         if (request.getGender() == null || request.getGender().isBlank()) {

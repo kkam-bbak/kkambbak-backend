@@ -52,7 +52,7 @@ public class UserController {
         return ApiResponse.ok();
     }
 
-    @PutMapping("/register")
+    @PatchMapping("/register")
     public ApiResponse<Void> register(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody UpdateProfileDto request) {

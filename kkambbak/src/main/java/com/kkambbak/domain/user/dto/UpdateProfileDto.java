@@ -13,6 +13,5 @@ public class UpdateProfileDto {
     private String name;
     private String gender;
     private String countryOfOrigin;
-    private String personalityOrImage;
-    private String preferredNameMeaning;
+    private String profileImage;
 }
