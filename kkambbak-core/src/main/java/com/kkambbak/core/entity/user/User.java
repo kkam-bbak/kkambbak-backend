@@ -106,13 +106,13 @@ public class User extends BaseEntity {
         this.status = UserStatus.PENDING;
     }
 
-    public void updateProfile(String name, Gender gender, String countryOfOrigin,
-                              String personalityOrImage, String preferredNameMeaning) {
+    public void updateProfile(String name, Gender gender, String countryOfOrigin, String profileImage) {
         this.name = name;
         this.gender = gender;
         this.countryOfOrigin = countryOfOrigin;
-        this.personalityOrImage = personalityOrImage;
-        this.preferredNameMeaning = preferredNameMeaning;
+        if (profileImage != null) {
+            this.profileImage = profileImage;
+        }
     }
 
     //롤플레이 월 사용 횟수 증가
@@ -130,5 +130,10 @@ public class User extends BaseEntity {
     public void updateKoreanName(String koreanName,String nameMeaning) {
         this.koreanName = koreanName;
         this.nameMeaning = nameMeaning;
+    }
+
+    public void updateKoreanNameWithPersonality(String preferredNameMeaning, String personalityOrImage) {
+        this.preferredNameMeaning = preferredNameMeaning;
+        this.personalityOrImage = personalityOrImage;
     }
 }

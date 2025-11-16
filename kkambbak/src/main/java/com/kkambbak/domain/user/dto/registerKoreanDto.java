@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateProfileDto {
-    private String name;
-    private String gender;
-    private String countryOfOrigin;
-    private String profileImage;
+public class registerKoreanDto {
+    private String preferredNameMeaning;
+    private String personalityOrImage;
 }
