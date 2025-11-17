@@ -21,6 +21,7 @@ import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -47,23 +48,39 @@ public class UserService {
                                    String name, String profileImage) {
         AuthProvider authProvider = AuthProvider.valueOf(provider.toUpperCase());
 
-        return userRepository.findByProviderAndProviderId(authProvider, providerId)
-                .map(existingUser -> {
-                    return userRepository.save(
-                            existingUser.updateFromOAuth2(email, name, profileImage)
-                    );
-                })
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .name(name)
-                            .profileImage(profileImage)
-                            .provider(authProvider)
-                            .providerId(providerId)
-                            .isGuest(false)
-                            .build();
-                    return userRepository.save(newUser);
-                });
+        try {
+            return userRepository.findByProviderAndProviderId(authProvider, providerId)
+                    .map(existingUser -> {
+                        return userRepository.save(
+                                existingUser.updateFromOAuth2(email, name, profileImage)
+                        );
+                    })
+                    .orElseGet(() -> {
+                        User newUser = User.builder()
+                                .email(email)
+                                .name(name)
+                                .profileImage(profileImage)
+                                .provider(authProvider)
+                                .providerId(providerId)
+                                .isGuest(false)
+                                .build();
+                        return userRepository.save(newUser);
+                    });
+        } catch (DataIntegrityViolationException e) {
+            return userRepository.findByProviderAndProviderId(authProvider, providerId)
+                    .map(existingUser -> {
+                        log.info("Found existing user after UNIQUE constraint violation - provider: {}, providerId: {}",
+                                provider, providerId);
+                        return userRepository.save(
+                                existingUser.updateFromOAuth2(email, name, profileImage)
+                        );
+                    })
+                    .orElseThrow(() -> {
+                        log.error("Failed to create or find user after retry - provider: {}, providerId: {}",
+                                provider, providerId);
+                        return new RuntimeException("사용자 생성 또는 조회 실패", e);
+                    });
+        }
     }
 
     // 게스트 사용자 생성
