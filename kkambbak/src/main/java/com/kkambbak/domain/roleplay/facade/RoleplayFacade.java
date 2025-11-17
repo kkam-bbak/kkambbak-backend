@@ -1,8 +1,8 @@
 package com.kkambbak.domain.roleplay.facade;
 
 
-import com.kkambbak.client.azure.dto.RoleplayPronunciationDto;
-import com.kkambbak.client.azure.service.RoleplayPronunciationService;
+import com.kkambbak.client.azure.dto.AzurePronunciationDto;
+import com.kkambbak.client.azure.service.AzurePronunciationService;
 import com.kkambbak.client.openai.dto.ChatMessage;
 import com.kkambbak.client.openai.prompts.RoleplayPromptTemplate;
 import com.kkambbak.core.entity.roleplay.RoleplayDialogues;
@@ -48,7 +48,7 @@ public class RoleplayFacade {
     private final UserRepository userRepository;
     private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
     private final AudioConvertService audioConvertService;
-    private final RoleplayPronunciationService roleplayPronunciationService;
+    private final AzurePronunciationService roleplayPronunciationService;
 
     private static final int MAX_TURN_PER_SPEAKER = 3;
     private static final int MAX_PRONUNCIATION_ATTEMPTS = 2;
@@ -186,7 +186,7 @@ public class RoleplayFacade {
             throw new PronunciationLimitExceedException();
         }
         File wavFile = audioConvertService.toWav(audioFile);
-        RoleplayPronunciationDto pronunciationScore = roleplayPronunciationService.getPronunciationScore(dialogues.getKorean(), wavFile);
+        AzurePronunciationDto pronunciationScore = roleplayPronunciationService.getPronunciationScore(dialogues.getKorean(), wavFile);
         RoleplayPronunciationFeedback feedback = roleplayService.saveRoleplayPronunciationFeedback(userId, dialogues, pronunciationScore);
         return RoleplayEvaluateResponseDto.builder()
                 .dialogueId(dialogues.getId())

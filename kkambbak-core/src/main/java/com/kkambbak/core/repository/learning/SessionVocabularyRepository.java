@@ -21,4 +21,14 @@ public interface SessionVocabularyRepository extends JpaRepository<SessionVocabu
         Long getSessionId();
         long getCnt();
     }
+
+    // 세션의 단어 목록 조회
+    @Query("""
+        select sv.vocabulary.id
+          from SessionVocabulary sv
+         where sv.session.id = :sessionId
+         order by sv.vocabulary.id asc
+    """)
+    List<Long> findVocabularyIdsOrderByVocabIdAsc(@Param("sessionId") Long sessionId);
+
 }

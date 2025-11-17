@@ -1,35 +1,37 @@
 package com.kkambbak.domain.learning.controller;
 
-import com.kkambbak.core.entity.survey.enums.CategoryType;
-import com.kkambbak.domain.learning.dto.LearningSessionListResponse;
+import com.kkambbak.domain.learning.dto.LearningStartDto;
 import com.kkambbak.domain.learning.facade.LearningFacade;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/learning")
 @RequiredArgsConstructor
-public class LearningListController {
+public class LearningStartController {
 
     private final LearningFacade learningFacade;
 
-    @GetMapping("/sessions")
-    public ApiResponse<LearningSessionListResponse> getLearningList(
+    @PostMapping("/sessions/{sessionId}/start")
+    public ApiResponse<LearningStartDto.StartResponse> start(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(name = "category") CategoryType category,
-            @RequestParam(name = "cursor", required = false) Long cursor,
-            @RequestParam(name = "limit", defaultValue = "10") int limit
+            @PathVariable Long sessionId,
+            @RequestBody(required = false) LearningStartDto.StartRequest body
     ) {
+
         Long userId = userDetails.getUserId();
 
-        var response = learningFacade.getLearningList(
+        if (body == null) {
+            body = LearningStartDto.StartRequest.builder().build();
+        }
+
+        var response = learningFacade.startLearning(
                 userId,
-                category,
-                cursor,
-                limit
+                sessionId,
+                body
         );
 
         return ApiResponse.ok(response);

@@ -1,6 +1,6 @@
 package com.kkambbak.domain.roleplay.service;
 
-import com.kkambbak.client.azure.dto.RoleplayPronunciationDto;
+import com.kkambbak.client.azure.dto.AzurePronunciationDto;
 import com.kkambbak.core.entity.roleplay.RoleplayDialogues;
 import com.kkambbak.core.entity.roleplay.RoleplayPronunciationFeedback;
 import com.kkambbak.core.entity.roleplay.RoleplayScenario;
@@ -109,7 +109,7 @@ public class RoleplayService {
 
     @Transactional
     public RoleplayPronunciationFeedback saveRoleplayPronunciationFeedback(
-            Long userId, RoleplayDialogues dialogues, RoleplayPronunciationDto pronunciationScore){
+            Long userId, RoleplayDialogues dialogues, AzurePronunciationDto pronunciationScore){
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
                     log.warn("User not found");

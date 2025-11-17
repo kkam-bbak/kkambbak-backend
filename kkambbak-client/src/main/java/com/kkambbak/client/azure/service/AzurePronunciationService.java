@@ -1,6 +1,6 @@
 package com.kkambbak.client.azure.service;
 
-import com.kkambbak.client.azure.dto.RoleplayPronunciationDto;
+import com.kkambbak.client.azure.dto.AzurePronunciationDto;
 import com.kkambbak.client.azure.exception.PronunciationFailException;
 import com.kkambbak.client.azure.exception.PronunciationUnavailableException;
 import com.microsoft.cognitiveservices.speech.*;
@@ -14,7 +14,7 @@ import java.io.File;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RoleplayPronunciationService {
+public class AzurePronunciationService {
 
     @Value("${azure.api.key:dummy_azure_key}")
     private String azureApikey;
@@ -22,7 +22,7 @@ public class RoleplayPronunciationService {
     private final String speechRegion = "koreacentral";
     private final String speechLang = "ko-KR";
 
-    public RoleplayPronunciationDto getPronunciationScore(String referenceText, File wavFile) {
+    public AzurePronunciationDto getPronunciationScore(String referenceText, File wavFile) {
         try (SpeechConfig speechConfig = SpeechConfig.fromSubscription(azureApikey, speechRegion)) {
             speechConfig.setSpeechRecognitionLanguage(speechLang);
 
@@ -53,7 +53,7 @@ public class RoleplayPronunciationService {
 
                 PronunciationAssessmentResult pa = PronunciationAssessmentResult.fromResult(result);
 
-                return RoleplayPronunciationDto.builder()
+                return AzurePronunciationDto.builder()
                         .text(result.getText())
                         .accuracyScore(safe(pa.getAccuracyScore()))
                         .fluencyScore(safe(pa.getFluencyScore()))
