@@ -13,7 +13,9 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"provider", "provider_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -66,7 +68,7 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private AuthProvider provider = AuthProvider.GOOGLE;
 
-    @Column(name = "provider_id", length = 255)
+    @Column(name = "provider_id", length = 255, nullable = false)
     private String providerId;
 
     @Builder.Default

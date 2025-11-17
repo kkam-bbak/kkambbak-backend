@@ -21,7 +21,9 @@ import com.kkambbak.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -47,22 +49,47 @@ public class UserService {
                                    String name, String profileImage) {
         AuthProvider authProvider = AuthProvider.valueOf(provider.toUpperCase());
 
+        try {
+            return userRepository.findByProviderAndProviderId(authProvider, providerId)
+                    .map(existingUser -> userRepository.save(
+                            existingUser.updateFromOAuth2(email, name, profileImage)
+                    ))
+                    .orElseGet(() -> {
+                        User newUser = User.builder()
+                                .email(email)
+                                .name(name)
+                                .profileImage(profileImage)
+                                .provider(authProvider)
+                                .providerId(providerId)
+                                .isGuest(false)
+                                .build();
+                        return userRepository.save(newUser);
+                    });
+        } catch (DataIntegrityViolationException e) {
+            return retryFindUser(authProvider, provider, providerId, e);
+        }
+    }
+
+    /**
+     * UNIQUE 제약 위반 발생 시 새로운 트랜잭션에서 사용자 재조회
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    protected User retryFindUser(AuthProvider authProvider, String provider, String providerId,
+                                  DataIntegrityViolationException originalException) {
         return userRepository.findByProviderAndProviderId(authProvider, providerId)
                 .map(existingUser -> {
-                    return userRepository.save(
-                            existingUser.updateFromOAuth2(email, name, profileImage)
-                    );
+                    log.info("Found existing user after UNIQUE constraint violation - provider: {}, providerId: {}",
+                            provider, providerId);
+                    return existingUser;
                 })
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .name(name)
-                            .profileImage(profileImage)
-                            .provider(authProvider)
-                            .providerId(providerId)
-                            .isGuest(false)
-                            .build();
-                    return userRepository.save(newUser);
+                .orElseThrow(() -> {
+                    log.error("UNIQUE constraint violation occurred but user not found in retry - provider: {}, providerId: {}",
+                            provider, providerId);
+                    return new IllegalStateException(
+                            String.format("UNIQUE constraint violation occurred but user not found in retry (provider: %s, providerId: %s)",
+                                    provider, providerId),
+                            originalException
+                    );
                 });
     }
 
