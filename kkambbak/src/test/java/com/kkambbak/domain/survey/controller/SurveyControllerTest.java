@@ -34,9 +34,9 @@ class SurveyControllerTest extends KkambbakDocumentApiTester {
           "rawResponses": {
             "Why are you learning Korean?": "Preparing for the TOPIK exam",
             "How do you like to study?": "Quick and focused learning",
-            "difficulty": "BEGINNER",
-            "How much time do you want to spend per session?": "5mins",
-            "interestType": "DAILY_EXPRESSIONS"
+            "Which level suits you best?": "Beginner",
+            "What kind of words are you most interested in?": "daily expressions",
+            "How much time do you want to spend per session?": "5mins"
           }
         }
         """;
