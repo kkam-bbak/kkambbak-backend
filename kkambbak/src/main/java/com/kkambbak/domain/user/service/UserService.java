@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -50,11 +51,9 @@ public class UserService {
 
         try {
             return userRepository.findByProviderAndProviderId(authProvider, providerId)
-                    .map(existingUser -> {
-                        return userRepository.save(
-                                existingUser.updateFromOAuth2(email, name, profileImage)
-                        );
-                    })
+                    .map(existingUser -> userRepository.save(
+                            existingUser.updateFromOAuth2(email, name, profileImage)
+                    ))
                     .orElseGet(() -> {
                         User newUser = User.builder()
                                 .email(email)
@@ -67,20 +66,31 @@ public class UserService {
                         return userRepository.save(newUser);
                     });
         } catch (DataIntegrityViolationException e) {
-            return userRepository.findByProviderAndProviderId(authProvider, providerId)
-                    .map(existingUser -> {
-                        log.info("Found existing user after UNIQUE constraint violation - provider: {}, providerId: {}",
-                                provider, providerId);
-                        return userRepository.save(
-                                existingUser.updateFromOAuth2(email, name, profileImage)
-                        );
-                    })
-                    .orElseThrow(() -> {
-                        log.error("Failed to create or find user after retry - provider: {}, providerId: {}",
-                                provider, providerId);
-                        return new RuntimeException("사용자 생성 또는 조회 실패", e);
-                    });
+            return retryFindUser(authProvider, provider, providerId, e);
         }
+    }
+
+    /**
+     * UNIQUE 제약 위반 발생 시 새로운 트랜잭션에서 사용자 재조회
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    protected User retryFindUser(AuthProvider authProvider, String provider, String providerId,
+                                  DataIntegrityViolationException originalException) {
+        return userRepository.findByProviderAndProviderId(authProvider, providerId)
+                .map(existingUser -> {
+                    log.info("Found existing user after UNIQUE constraint violation - provider: {}, providerId: {}",
+                            provider, providerId);
+                    return existingUser;
+                })
+                .orElseThrow(() -> {
+                    log.error("UNIQUE constraint violation occurred but user not found in retry - provider: {}, providerId: {}",
+                            provider, providerId);
+                    return new IllegalStateException(
+                            String.format("UNIQUE constraint violation occurred but user not found in retry (provider: %s, providerId: %s)",
+                                    provider, providerId),
+                            originalException
+                    );
+                });
     }
 
     // 게스트 사용자 생성
