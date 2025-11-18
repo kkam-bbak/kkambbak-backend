@@ -27,4 +27,6 @@ public interface LearningResultDetailsRepository extends JpaRepository<LearningR
             Long learningResultId,
             Long vocabularyId
     );
+
+    List<LearningResultDetail> findByLearningResultId(Long learningResultId);
 }
