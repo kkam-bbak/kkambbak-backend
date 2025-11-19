@@ -2,6 +2,8 @@ package com.kkambbak.domain.survey.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kkambbak.core.entity.survey.Survey;
+import com.kkambbak.core.entity.survey.enums.DifficultyLevel;
+import com.kkambbak.core.entity.survey.enums.InterestType;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.survey.SurveyRepository;
 import com.kkambbak.core.repository.user.UserRepository;
@@ -36,6 +38,9 @@ public class SurveyService {
             throw new InvalidSurveyRequestException();
         }
 
+        // 답변 유효성 검증
+        validateSurveyResponses(req.getRawResponses());
+
         // 사용자 존재 여부
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
@@ -65,6 +70,42 @@ public class SurveyService {
     // 설문 완료 여부 확인
     public boolean isCompleted(Long userId) {
         return surveyRepository.existsByUser_Id(userId);
+    }
+
+    // 설문 응답 유효성 검증
+    // Todo: 추후 필요 시 나머지 설문 답변도 이넘으로 관리 후 검증 필요
+    private void validateSurveyResponses(Map<String, Object> responses) {
+        // 난이도 질문 검증
+        Object difficultyAnswer = responses.get("Which level suits you best?");
+        if (difficultyAnswer != null) {
+            String normalized = normalizeAnswer(difficultyAnswer.toString());
+            try {
+                DifficultyLevel.valueOf(normalized);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid difficulty answer: {}", difficultyAnswer);
+                throw new InvalidSurveyRequestException("Invalid answer format for difficulty question");
+            }
+        }
+
+        // 관심사 질문 검증
+        Object interestAnswer = responses.get("What kind of words are you most interested in?");
+        if (interestAnswer != null) {
+            String normalized = normalizeAnswer(interestAnswer.toString());
+            try {
+                InterestType.valueOf(normalized);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid interest answer: {}", interestAnswer);
+                throw new InvalidSurveyRequestException("Invalid answer format for interest question");
+            }
+        }
+    }
+
+    // 답변을 Enum 형식으로 정규화 (공백, 하이픈을 언더스코어로 변환)
+    private String normalizeAnswer(String answer) {
+        return answer.trim()
+                .toUpperCase()
+                .replace(" ", "_")
+                .replace("-", "_");
     }
 
     // Map을 Json 문자열로 바꿔 저장 가능한 형태로

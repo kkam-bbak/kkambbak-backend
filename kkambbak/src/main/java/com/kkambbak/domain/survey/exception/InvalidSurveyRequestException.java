@@ -8,4 +8,8 @@ public class InvalidSurveyRequestException extends CustomException {
     public InvalidSurveyRequestException() {
         super(SurveyErrorCode.INVALID_SURVEY_REQUEST);
     }
+
+    public InvalidSurveyRequestException(String message) {
+        super(SurveyErrorCode.INVALID_SURVEY_REQUEST, message);
+    }
 }

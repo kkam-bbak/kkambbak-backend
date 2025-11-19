@@ -39,9 +39,9 @@ public class SurveyPrefResolver {
             if (diffStr == null || interestStr == null) return Optional.empty();
 
             DifficultyLevel diff = DifficultyLevel.valueOf(
-                    diffStr.trim().toUpperCase().replace(" ", "_"));
+                    diffStr.trim().toUpperCase().replace(" ", "_").replace("-", "_"));
             InterestType interest = InterestType.valueOf(
-                    interestStr.trim().toUpperCase().replace(" ", "_"));
+                    interestStr.trim().toUpperCase().replace(" ", "_").replace("-", "_"));
 
             return Optional.of(new UserPref(diff, interest));
         } catch (Exception e) {
