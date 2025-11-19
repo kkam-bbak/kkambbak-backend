@@ -31,13 +31,17 @@ public class SurveyPrefResolver {
             String raw = surveyOpt.get().getResponses();
             JsonNode root = objectMapper.readTree(raw);
 
-            String diffStr = getCaseInsensitive(root, "difficulty", "difficultyLevel");
-            String interestStr = getCaseInsensitive(root, "interestType", "interest");
+            String diffStr = getCaseInsensitive(root,
+                    "Which level suits you best?", "difficulty", "difficultyLevel");
+            String interestStr = getCaseInsensitive(root,
+                    "What kind of words are you most interested in?", "interestType", "interest");
 
             if (diffStr == null || interestStr == null) return Optional.empty();
 
-            DifficultyLevel diff = DifficultyLevel.valueOf(diffStr.trim().toUpperCase());
-            InterestType interest = InterestType.valueOf(interestStr.trim().toUpperCase());
+            DifficultyLevel diff = DifficultyLevel.valueOf(
+                    diffStr.trim().toUpperCase().replace(" ", "_").replace("-", "_"));
+            InterestType interest = InterestType.valueOf(
+                    interestStr.trim().toUpperCase().replace(" ", "_").replace("-", "_"));
 
             return Optional.of(new UserPref(diff, interest));
         } catch (Exception e) {
