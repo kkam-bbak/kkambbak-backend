@@ -19,6 +19,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class LearningResultControllerTest extends KkambbakDocumentApiTester {
@@ -59,6 +60,9 @@ class LearningResultControllerTest extends KkambbakDocumentApiTester {
                                         .description("해당 세션에 대한 사용자의 학습 결과 요약 정보를 조회합니다.")
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .pathParameters(
+                                                parameterWithName("sessionId").description("조회할 세션 ID")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING)
@@ -147,6 +151,9 @@ class LearningResultControllerTest extends KkambbakDocumentApiTester {
                                         .description("해당 세션에 대한 학습 결과 요약 정보 및 단어별 정오답 리스트를 조회합니다.")
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .pathParameters(
+                                                parameterWithName("sessionId").description("조회할 세션 ID")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING)
