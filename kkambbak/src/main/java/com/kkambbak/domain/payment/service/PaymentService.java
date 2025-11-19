@@ -49,7 +49,18 @@ public class PaymentService {
     public PaymentDto.CreateResponse createPayment(Long userId, Long planId, boolean autoRenew) {
         var pendingPayment = payHistoryRepository.findByUserIdAndStatusWithLock(userId, PaymentStatus.PENDING);
         if (pendingPayment.isPresent()) {
-            throw new PaymentPendingException("진행 중인 결제가 있습니다. 진행 중인 결제를 완료해주세요.");
+            PayHistory pending = pendingPayment.get();
+
+            // 15분 이상 지났으면 결제 자동 실패 처리
+            // TODO: 추후 스케줄러 추가 고려 - 매일 새벽에 15분 이상 지난 PENDING 결제를 일괄 FAILED 처리하여 DB 정합성 유지
+            if (pending.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(15))) {
+                pending.fail();
+                payHistoryRepository.save(pending);
+                log.info("Expired pending payment auto-failed - paymentId: {}, userId: {}, createdAt: {}",
+                    pending.getId(), userId, pending.getCreatedAt());
+            } else {
+                throw new PaymentPendingException("진행 중인 결제가 있습니다. 진행 중인 결제를 완료해주세요.");
+            }
         }
 
         var activeSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);

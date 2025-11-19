@@ -47,10 +47,10 @@ kakao:
     subscription-cid: ${KAKAO_PAY_SUBSCRIPTION_CID:TCSUBSCRIP}
     api-url: ${KAKAO_PAY_API_URL:https://test.kakao.com}
     callback:
-      approval-url: ${KAKAO_PAY_APPROVAL_URL:http://localhost:8080/api/v1/payments/approve}
-      success-url: ${KAKAO_PAY_SUCCESS_URL:http://localhost:3000/payment/success}
-      cancel-url: ${KAKAO_PAY_CANCEL_URL:http://localhost:3000/payment/fail}
-      fail-url: ${KAKAO_PAY_FAIL_URL:http://localhost:3000/payment/fail}
+      approval-url: ${KAKAO_PAY_APPROVAL_URL:https://kkambbak.duckdns.org/api/v1/payments/approve}
+      success-url: ${KAKAO_PAY_SUCCESS_URL:https://kkam-bbak.netlify.app/payment/checkout/result?r=success}
+      cancel-url: ${KAKAO_PAY_CANCEL_URL:https://kkam-bbak.netlify.app/payment/checkout/result?r=fail}
+      fail-url: ${KAKAO_PAY_FAIL_URL:https://kkam-bbak.netlify.app/payment/checkout/result?r=fail}
 
 
 openai:
