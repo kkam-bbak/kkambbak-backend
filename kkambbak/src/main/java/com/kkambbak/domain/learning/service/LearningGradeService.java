@@ -1,6 +1,8 @@
 package com.kkambbak.domain.learning.service;
 
 import com.kkambbak.client.azure.dto.AzurePronunciationDto;
+import com.kkambbak.client.azure.exception.PronunciationFailException;
+import com.kkambbak.client.azure.exception.PronunciationUnavailableException;
 import com.kkambbak.client.azure.service.AzurePronunciationService;
 import com.kkambbak.core.entity.learning.LearningResult;
 import com.kkambbak.core.entity.learning.LearningResultDetail;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +45,6 @@ public class LearningGradeService {
     private final VocabularyRepository vocabularyRepository;
     private final SessionRepository sessionRepository;
     private final AzurePronunciationService pronunciationService;
-    private final AudioConvertService audioConvertService;
 
     private static final double PASSING_PRONUNCIATION_SCORE = 60.0;
 
@@ -142,25 +144,31 @@ public class LearningGradeService {
     ) {
         File wavFile = null;
         try {
-            wavFile = audioConvertService.toWav(audioFile);
+            wavFile = File.createTempFile("kkambbak-pron-", ".wav");
+            audioFile.transferTo(wavFile.toPath());
 
             String referenceText = vocab.getKorean();
 
             AzurePronunciationDto result =
                     pronunciationService.getPronunciationScore(referenceText, wavFile);
+            if (result == null) {
+                throw new PronunciationFailException();
+            }
 
             double score = result.getPronunciationScore();
 
-            // 60점 이상이면 정답
             return score >= PASSING_PRONUNCIATION_SCORE;
 
         } catch (IOException e) {
-            throw new RuntimeException("음성 파일 처리 중 오류가 발생했습니다.", e);
+            log.error("음성 파일 처리 중 오류 발생", e);
+            throw new PronunciationUnavailableException();
+
         } finally {
-            if (wavFile != null && wavFile.exists()) {
-                boolean deleted = wavFile.delete();
-                if (!deleted) {
-                    log.warn("임시 WAV 파일 삭제 실패: {}", wavFile.getAbsolutePath());
+            if (wavFile != null) {
+                try {
+                    Files.deleteIfExists(wavFile.toPath());
+                } catch (IOException ex) {
+                    log.warn("임시 WAV 파일 삭제 중 오류: {}", wavFile.getAbsolutePath(), ex);
                 }
             }
         }

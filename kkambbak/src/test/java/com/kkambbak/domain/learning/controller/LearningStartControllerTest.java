@@ -77,9 +77,13 @@ class LearningStartControllerTest extends KkambbakDocumentApiTester {
                                         )
                                         .requestFields(
                                                 fieldWithPath("mode")
-
+                                                        .type(JsonFieldType.STRING)
                                                         .optional()
-                                                        .description("학습 모드 (ALL / WRONG_ONLY). 기본값은 ALL")
+                                                        .description("학습 모드 (ALL / WRONG_ONLY). 기본값은 ALL"),
+                                                fieldWithPath("baseResultId")
+                                                        .type(JsonFieldType.NUMBER)
+                                                        .optional()
+                                                        .description("WRONG_ONLY 모드에서 사용하는 기준이 되는 이전 학습 결과 ID. ALL 모드에서는 보내지 않습니다.")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").description("상태 코드"),
@@ -154,8 +158,10 @@ class LearningStartControllerTest extends KkambbakDocumentApiTester {
                                         )
                                         .requestFields(
                                                 fieldWithPath("mode")
-                                                        .description("WRONG_ONLY 로 고정 (이전 학습에서 틀린 단어만 다시 학습)"),
+                                                        .type(JsonFieldType.STRING)
+                                                        .description("WRONG_ONLY (이전 학습에서 틀린 단어만 다시 학습)"),
                                                 fieldWithPath("baseResultId")
+                                                        .type(JsonFieldType.NUMBER)
                                                         .description("이전 학습 결과 ID. 해당 결과에서 틀린 단어들만 이번 학습에 사용됩니다.")
                                         )
                                         .responseFields(
