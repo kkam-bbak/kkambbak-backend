@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class PaymentService {
 
+    private static final long PAYMENT_EXPIRY_MINUTES = 15; // 카카오페이 결제 URL 유효 시간
+
     private final KakaoPayService kakaoPayService;
     private final PayHistoryRepository payHistoryRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
@@ -51,13 +54,14 @@ public class PaymentService {
         if (pendingPayment.isPresent()) {
             PayHistory pending = pendingPayment.get();
 
-            // 15분 이상 지났으면 결제 자동 실패 처리
-            // TODO: 추후 스케줄러 추가 고려 - 매일 새벽에 15분 이상 지난 PENDING 결제를 일괄 FAILED 처리하여 DB 정합성 유지
-            if (pending.getCreatedAt().isBefore(LocalDateTime.now().minusMinutes(15))) {
+            // 결제 URL 유효 시간 이상 지났으면 결제 자동 실패 처리
+            // TODO: 추후 스케줄러 추가 고려 - 매일 새벽에 만료된 PENDING 결제를 일괄 FAILED 처리하여 DB 정합성 유지
+            long elapsedMinutes = ChronoUnit.MINUTES.between(pending.getCreatedAt(), LocalDateTime.now());
+            if (elapsedMinutes >= PAYMENT_EXPIRY_MINUTES) {
                 pending.fail();
                 payHistoryRepository.save(pending);
-                log.info("Expired pending payment auto-failed - paymentId: {}, userId: {}, createdAt: {}",
-                    pending.getId(), userId, pending.getCreatedAt());
+                log.info("Expired pending payment auto-failed - paymentId: {}, userId: {}, createdAt: {}, elapsed: {}분",
+                    pending.getId(), userId, pending.getCreatedAt(), elapsedMinutes);
             } else {
                 throw new PaymentPendingException("진행 중인 결제가 있습니다. 진행 중인 결제를 완료해주세요.");
             }
@@ -66,7 +70,7 @@ public class PaymentService {
         var activeSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
         if (activeSubscription.isPresent()) {
             Subscription subscription = activeSubscription.get();
-            long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(
+            long daysRemaining = ChronoUnit.DAYS.between(
                 LocalDateTime.now(),
                 subscription.getEndDate()
             );
