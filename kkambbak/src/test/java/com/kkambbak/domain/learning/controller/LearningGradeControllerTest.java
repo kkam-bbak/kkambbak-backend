@@ -20,6 +20,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.multipart;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
@@ -88,6 +89,9 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                         """)
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
+                                        )
+                                        .pathParameters(
+                                                parameterWithName("sessionId").description("채점할 학습 세션 ID")
                                         )
                                         .responseFields(
                                                 fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),

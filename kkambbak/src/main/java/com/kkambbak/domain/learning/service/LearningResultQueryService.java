@@ -33,7 +33,7 @@ public class LearningResultQueryService {
         if (result.getDurationSeconds() == null || result.getCompletedAt() == null) {
             throw new LearningDataInconsistencyException(
                     "durationSeconds 또는 completedAt 값이 NULL입니다. " +
-                            "userId=%d, sessionId=%d, resultId=%d"
+                            "userId=%s, sessionId=%s, resultId=%s"
                                     .formatted(userId, sessionId, result.getId())
             );
         }
