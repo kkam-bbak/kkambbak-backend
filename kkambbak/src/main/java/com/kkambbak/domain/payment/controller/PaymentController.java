@@ -42,6 +42,7 @@ public class PaymentController {
         @RequestParam String orderId,
         HttpServletResponse response
     ) throws Exception {
+        log.info("Payment approval request - orderId: {}, pg_token: {}", orderId, pg_token);
         String redirectUrl = paymentFacade.approvePayment(orderId, pg_token);
         response.sendRedirect(redirectUrl);
     }
