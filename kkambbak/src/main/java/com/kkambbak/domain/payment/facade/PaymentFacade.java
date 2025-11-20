@@ -103,6 +103,9 @@ public class PaymentFacade {
                 PayHistory payHistory = payHistoryRepository.findByOrderId(orderId)
                     .orElse(null);
                 if (payHistory != null) {
+                    payHistory.fail();
+                    payHistoryRepository.save(payHistory);
+
                     SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
 
                     try {
