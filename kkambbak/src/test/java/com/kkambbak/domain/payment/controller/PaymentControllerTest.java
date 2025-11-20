@@ -93,24 +93,18 @@ class PaymentControllerTest extends KkambbakDocumentApiTester {
         // when & then
         this.mockMvc.perform(get("/api/v1/payments/approve")
                         .param("orderId", "order_1_1234567890")
-                        .param("pg_token", "05158049924b3495c98b")
-                        .contentType("application/json"))
-                .andExpect(status().isOk())
+                        .param("pg_token", "05158049924b3495c98b"))
+                .andExpect(status().is3xxRedirection())
                 .andDo(document("payment-approve",
                         resource(
                                 ResourceSnippetParameters.builder()
                                         .tag("Payments")
                                         .summary("결제 승인")
-                                        .description("카카오페이에서 사용자 승인 후 받은 pg_token과 orderId로 결제를 승인하고 구독을 생성합니다. 결제 성공/실패 리다이액트 응답에 포함되어 있어 해당 url로 리다이액트 진행해하면 됨.")
+                                        .description("카카오페이에서 사용자 승인 후 받은 pg_token과 orderId로 결제를 승인하고 구독을 생성합니다. " +
+                                                "성공 시 프론트엔드 성공 URL로, 실패 시 실패 URL로 HTTP 302 리다이렉트됩니다.")
                                         .queryParameters(
                                                 parameterWithName("orderId").description("주문 ID (결제 생성 시 발급)"),
                                                 parameterWithName("pg_token").description("카카오페이 승인 토큰")
-                                        )
-                                        .responseFields(
-                                                fieldWithPath("status.statusCode").type(JsonFieldType.STRING).description("상태 코드"),
-                                                fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
-                                                fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
-                                                fieldWithPath("body").type(JsonFieldType.STRING).description("리다이렉트 URL (프론트에서 처리)")
                                         )
                                         .build()
                         )

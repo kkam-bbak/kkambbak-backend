@@ -7,12 +7,15 @@ import com.kkambbak.domain.payment.facade.PaymentFacade;
 import com.kkambbak.domain.payment.service.PaymentService;
 import com.kkambbak.global.response.ApiResponse;
 import com.kkambbak.global.security.UserDetailsImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 
 @Slf4j
@@ -36,13 +39,14 @@ public class PaymentController {
     }
 
     @GetMapping("/approve")
-    public ApiResponse<String> approvePayment(
+    public void approvePayment(
         @RequestParam String pg_token,
-        @RequestParam String orderId
-    ) {
+        @RequestParam String orderId,
+        HttpServletResponse response
+    ) throws IOException {
         log.info("Payment approval request - orderId: {}, pg_token: {}", orderId, pg_token);
         String redirectUrl = paymentFacade.approvePayment(orderId, pg_token);
-        return ApiResponse.ok(redirectUrl);
+        response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("/{paymentId}")
