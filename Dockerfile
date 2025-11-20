@@ -1,11 +1,11 @@
 # API 서버 이미지
 FROM eclipse-temurin:21-jre-jammy AS api
 
-#FFMPEG 설치
-RUN apt-get update && \
-      apt-get install -y ffmpeg && \
-      apt-get clean && \
-      rm -rf /var/lib/apt/lists/*
+# FFMPEG 및 HTTPS 필수 라이브러리 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,6 +18,7 @@ ENTRYPOINT ["java", \
     "-XX:MaxRAMPercentage=75.0", \
     "-Duser.timezone=Asia/Seoul", \
     "-Djava.security.egd=file:/dev/./urandom", \
+    "-Djava.library.path=/usr/lib/x86_64-linux-gnu", \
     "-jar", \
     "/app/app.jar"]
 
