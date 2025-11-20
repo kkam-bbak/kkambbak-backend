@@ -12,7 +12,6 @@ import com.kkambbak.domain.auth.exception.UserNotFoundException;
 import com.kkambbak.domain.name.dto.NameCandidateItemDto;
 import com.kkambbak.domain.name.dto.NameResponseDto;
 import com.kkambbak.domain.name.dto.NameSelectRequestDto;
-import com.kkambbak.domain.name.exception.NameGenerationExceedException;
 import com.kkambbak.domain.name.service.NameService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +45,18 @@ public class NameFacade {
 
 
         if (nextAttempt > NAME_GENERATION_LIMIT) {
-            throw new NameGenerationExceedException();
+            NameHistory latestHistory = nameService.getLatestHistory(userId);
+            List<NameCandidateItemDto> candidates = nameService.parseGenerationOutput(latestHistory.getGenerationOutput());
+
+            return NameResponseDto.builder()
+                    .historyId(latestHistory.getId())
+                    .remainingAttempts(0)
+                    .generationOutput(
+                            NameResponseDto.GenerationOutput.builder()
+                                    .names(candidates)
+                                    .build()
+                    )
+                    .build();
         }
 
         String prompt = namePromptTemplate.buildKoreanNamePrompt(user.getGender().name(), user.getPersonalityOrImage(),user.getPreferredNameMeaning());
