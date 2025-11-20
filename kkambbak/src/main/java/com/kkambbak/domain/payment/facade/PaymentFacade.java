@@ -105,6 +105,9 @@ public class PaymentFacade {
                 if (payHistory != null) {
                     SubscriptionPlan premiumPlan = subscriptionService.getPremiumPlan();
 
+                    payHistory.fail();
+                    payHistoryRepository.save(payHistory);
+
                     try {
                         User user = userRoleService.getUser(payHistory.getUserId());
                         mailSender.sendPaymentFailureEmail(

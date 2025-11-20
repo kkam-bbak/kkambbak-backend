@@ -160,6 +160,9 @@ jobs:
             KAKAO_PAY_CID=${{ secrets.KAKAO_PAY_CID }}
             KAKAO_PAY_SUBSCRIPTION_CID=${{ secrets.KAKAO_PAY_SUBSCRIPTION_CID }}
             KAKAO_PAY_API_URL=${{ secrets.KAKAO_PAY_API_URL }}
+            KAKAO_PAY_APPROVAL_URL=${{ secrets.KAKAO_PAY_APPROVAL_URL }}
+            KAKAO_PAY_SUCCESS_URL=${{ secrets.KAKAO_PAY_SUCCESS_URL }}
+            KAKAO_PAY_FAIL_URL=${{ secrets.KAKAO_PAY_FAIL_URL }}
             GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
             GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
             EOF

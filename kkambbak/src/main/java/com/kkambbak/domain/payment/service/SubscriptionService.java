@@ -4,6 +4,7 @@ import com.kkambbak.client.mail.service.MailSender;
 import com.kkambbak.client.payment.service.KakaoPayService;
 import com.kkambbak.core.entity.payment.Subscription;
 import com.kkambbak.core.entity.payment.SubscriptionPlan;
+import com.kkambbak.core.entity.payment.enums.SubscriptionPlanType;
 import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
 import com.kkambbak.core.entity.user.User;
 import com.kkambbak.core.repository.payment.SubscriptionPlanRepository;
@@ -72,7 +73,7 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public SubscriptionPlan getPremiumPlan() {
-        return subscriptionPlanRepository.findByName("Premium")
+        return subscriptionPlanRepository.findByName(SubscriptionPlanType.PREMIUM.name())
             .orElseThrow(PlanNotFoundException::new);
     }
 
