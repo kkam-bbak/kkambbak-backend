@@ -15,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 
 @Slf4j
 @RestController
@@ -41,7 +43,7 @@ public class PaymentController {
         @RequestParam String pg_token,
         @RequestParam String orderId,
         HttpServletResponse response
-    ) throws Exception {
+    ) throws IOException {
         log.info("Payment approval request - orderId: {}, pg_token: {}", orderId, pg_token);
         String redirectUrl = paymentFacade.approvePayment(orderId, pg_token);
         response.sendRedirect(redirectUrl);
