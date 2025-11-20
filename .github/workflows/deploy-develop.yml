@@ -156,6 +156,8 @@ jobs:
             KAKAO_PAY_FAIL_URL=${{ secrets.KAKAO_PAY_FAIL_URL }}
             GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
             GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
             EOF
 
             # Docker 로그인
