@@ -87,5 +87,29 @@ public class NameService {
         history.markSelected();
         user.updateKoreanName(koreanName, nameMeaning);
     }
+
+    public NameHistory getLatestHistory(Long userId) {
+        return nameHistoryRepository.findTopByUser_IdOrderByCreatedAtDesc(userId)
+                .orElseThrow(NameHistoryNotFoundException::new);
+    }
+
+    public List<NameCandidateItemDto> parseGenerationOutput(Map<String, Object> generationOutput) {
+        try {
+            if (generationOutput == null || !generationOutput.containsKey("names")) {
+                log.error("생성 결과에 'names' 키가 없습니다.");
+                throw new NameCandidateParseException();
+            }
+            Object namesObj = generationOutput.get("names");
+            return objectMapper.convertValue(
+                    namesObj,
+                    new TypeReference<List<NameCandidateItemDto>>() {}
+            );
+        } catch (NameCandidateParseException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("이름 생성 결과 파싱 실패", e);
+            throw new NameCandidateParseException();
+        }
+    }
 }
 
