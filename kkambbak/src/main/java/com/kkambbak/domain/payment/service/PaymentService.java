@@ -184,11 +184,11 @@ public class PaymentService {
     }
 
     public String getApprovalSuccessUrl(String orderId) {
-        return kakaoPayService.getSuccessUrl() + "?orderId=" + orderId;
+        return kakaoPayService.getSuccessUrl() + "&orderId=" + orderId;
     }
 
-    public String getApprovalFailUrl() {
-        return kakaoPayService.getFailUrl();
+    public String getApprovalFailUrl(String orderId) {
+        return kakaoPayService.getFailUrl() + "&orderId=" + orderId;
     }
 
     @Transactional(readOnly = true)

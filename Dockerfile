@@ -18,7 +18,6 @@ ENTRYPOINT ["java", \
     "-XX:MaxRAMPercentage=75.0", \
     "-Duser.timezone=Asia/Seoul", \
     "-Djava.security.egd=file:/dev/./urandom", \
-    "-Djava.library.path=/usr/lib/x86_64-linux-gnu", \
     "-jar", \
     "/app/app.jar"]
 
