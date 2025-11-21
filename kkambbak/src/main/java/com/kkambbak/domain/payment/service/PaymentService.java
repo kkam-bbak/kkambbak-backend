@@ -78,6 +78,19 @@ public class PaymentService {
             throw new AlreadySubscribedException(message);
         }
 
+        var cancelledSubscription = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.CANCELLED);
+        if (cancelledSubscription.isPresent()) {
+            Subscription subscription = cancelledSubscription.get();
+            if (LocalDateTime.now().isBefore(subscription.getEndDate())) {
+                long daysRemaining = ChronoUnit.DAYS.between(
+                    LocalDateTime.now(),
+                    subscription.getEndDate()
+                );
+                String message = String.format("구독이 취소되었지만 아직 이용 가능합니다. 남은 날짜: %d일", daysRemaining);
+                throw new AlreadySubscribedException(message);
+            }
+        }
+
         SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
             .orElseThrow(PlanNotFoundException::new);
 
