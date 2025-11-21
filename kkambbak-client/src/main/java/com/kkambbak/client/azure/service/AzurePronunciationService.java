@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.URLEncoder;
 import java.util.Base64;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
