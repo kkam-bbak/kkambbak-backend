@@ -70,7 +70,6 @@ public class AzurePronunciationService {
             HttpClient client = HttpClient.newHttpClient();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            log.info("[Azure Response] Azure Raw Response: {}", response.body());
 
             if (response.statusCode() != 200) {
                 throw new PronunciationUnavailableException();
@@ -91,6 +90,15 @@ public class AzurePronunciationService {
             double fluencyScore = first.path("FluencyScore").asDouble(0.0);
             double completenessScore = first.path("CompletenessScore").asDouble(0.0);
             double pronunciationScore = first.path("PronScore").asDouble(0.0);
+
+
+            if (accuracyScore == 0.0 &&
+                    fluencyScore == 0.0 &&
+                    completenessScore == 0.0 &&
+                    pronunciationScore == 0.0) {
+
+                log.warn("[Azure Warning] Suspicious zero scores returned. Raw response: {}", response.body());
+            }
 
 
             return AzurePronunciationDto.builder()

@@ -67,7 +67,7 @@ public class AudioConvertService {
 
         } catch (Exception e) {
             log.error("Fail to convert audio file to .wav", e);
-            safeDelete(out);
+            if (out != null) safeDelete(out);
             throw new FFmpegConvertFailException();
 
         } finally {
