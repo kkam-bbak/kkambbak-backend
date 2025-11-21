@@ -22,4 +22,6 @@ public interface RoleplayPronunciationFeedbackRepository extends JpaRepository<R
      where f.roleplayDialogue.roleplaySession.id = :sessionId
 """)
     int countAttemptedDialogues(@Param("sessionId") Long sessionId);
+
+    boolean existsByRoleplayDialogue_Id(Long dialogueId);
 }

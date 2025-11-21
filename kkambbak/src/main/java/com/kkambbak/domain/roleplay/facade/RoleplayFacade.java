@@ -51,9 +51,7 @@ public class RoleplayFacade {
     private final AzurePronunciationService roleplayPronunciationService;
 
     private static final int MAX_TURN_PER_SPEAKER = 3;
-    private static final int MAX_PRONUNCIATION_ATTEMPTS = 2;
     private static final int FIRST_TURN_INDEX = 1;
-
     private static final String ROLE_SYSTEM = "system";
     private static final String ROLE_ASSISTANT = "assistant";
 
@@ -179,9 +177,9 @@ public class RoleplayFacade {
         RoleplayDialogues dialogues = roleplayDialoguesRepository.findById(dialogueId).orElseThrow(
                 DialogueNotFoundException::new);
 
-        //평가 가능 여부 판단 (최대 기회 2번)
-        int attempt = roleplayPronunciationFeedbackRepository.countByRoleplayDialogue_Id(dialogueId);
-        if(attempt>=MAX_PRONUNCIATION_ATTEMPTS){
+        //평가 가능 여부 판단(한 번만 가능)
+        boolean alreadyEvaluated = roleplayPronunciationFeedbackRepository.existsByRoleplayDialogue_Id(dialogueId);
+        if(alreadyEvaluated){
             log.warn("Pronunciation feedback has been reached");
             throw new PronunciationLimitExceedException();
         }

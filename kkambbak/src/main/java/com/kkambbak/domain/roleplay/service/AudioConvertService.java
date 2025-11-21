@@ -34,11 +34,13 @@ public class AudioConvertService {
         File out = null;
 
         try {
-            in = File.createTempFile("in-", "-" + Objects.requireNonNullElse(file.getOriginalFilename(), "audio"));
+            in = File.createTempFile("in-", ".tmp");
             out = File.createTempFile("out-", ".wav");
             file.transferTo(in);
 
-            FFmpeg fFmpeg = new FFmpeg(ffmpegPath);
+            log.info("[Convert Result] Converting audio: in={}, out={}", in.getAbsolutePath(), out.getAbsolutePath());
+
+            FFmpeg ffmpeg = new FFmpeg(ffmpegPath);
             FFmpegBuilder builder = new FFmpegBuilder()
                     .setInput(in.getAbsolutePath())
                     .overrideOutputFiles(true)
@@ -47,22 +49,32 @@ public class AudioConvertService {
                     .setAudioCodec(AUDIO_CODEC)
                     .setAudioChannels(AUDIO_CHANNELS)
                     .setAudioSampleRate(SAMPLE_RATE)
+                    .addExtraArgs("-y")
+                    .addExtraArgs("-loglevel", "warning")
                     .done();
 
-            new FFmpegExecutor(fFmpeg).createJob(builder).run();
+            FFmpegExecutor executor = new FFmpegExecutor(ffmpeg);
+            executor.createJob(builder).run();
+
+            long size = out.length();
+
+            if (size < 1000) {
+                log.error("WAV file seems corrupted or empty. size={}", size);
+                throw new FFmpegConvertFailException();
+            }
 
             return out;
 
         } catch (Exception e) {
             log.error("Fail to convert audio file to .wav", e);
             if (out != null) safeDelete(out);
-
             throw new FFmpegConvertFailException();
 
         } finally {
-            if (in != null) safeDelete(in);
+            safeDelete(in);
         }
     }
+
 
 
     private void safeDelete(File file) {
