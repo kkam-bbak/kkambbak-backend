@@ -135,7 +135,7 @@ public class PaymentFacade {
                 log.warn("Failed to send Discord failure notification", discordError);
             }
 
-            return paymentService.getApprovalFailUrl();
+            return paymentService.getApprovalFailUrl(orderId);
         }
     }
 }
