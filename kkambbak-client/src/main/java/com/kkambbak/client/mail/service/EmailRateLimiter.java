@@ -15,7 +15,7 @@ public class EmailRateLimiter {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    private static final int MAX_EMAILS_PER_HOUR = 30;
+    private static final int MAX_EMAILS_PER_HOUR = 10;
     private static final long HOUR_IN_SECONDS = 3600;
     private static final String EMAIL_RATE_LIMIT_KEY_PREFIX = "email:rate:limit:";
 
