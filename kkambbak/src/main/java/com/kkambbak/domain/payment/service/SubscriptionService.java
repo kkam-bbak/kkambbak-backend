@@ -50,7 +50,14 @@ public class SubscriptionService {
             .ifPresent(existing -> {
                 existing.expire();
                 subscriptionRepository.save(existing);
-                log.info("Previous subscription expired - userId: {}, subscriptionId: {}", userId, existing.getId());
+                log.info("Previous ACTIVE subscription expired - userId: {}, subscriptionId: {}", userId, existing.getId());
+            });
+
+        subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.CANCELLED)
+            .ifPresent(existing -> {
+                existing.expire();
+                subscriptionRepository.save(existing);
+                log.info("Previous CANCELLED subscription expired - userId: {}, subscriptionId: {}", userId, existing.getId());
             });
 
         LocalDateTime now = LocalDateTime.now();
