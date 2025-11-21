@@ -49,15 +49,15 @@ public class KakaoPayService {
     private String approvalUrl;
 
     @Getter
-    @Value("${kakao.pay.callback.success-url:http://localhost:5173/payment/checkout/result?r=success}")
+    @Value("${kakao.pay.callback.success-url:https://kkam-bbak.pages.dev/payment/checkout/result?r=success}")
     private String successUrl;
 
     @Getter
-    @Value("${kakao.pay.callback.cancel-url:http://localhost:5173/payment/checkout/result?r=fail}")
+    @Value("${kakao.pay.callback.cancel-url:https://kkam-bbak.pages.dev/payment/checkout/result?r=fail}")
     private String cancelUrl;
 
     @Getter
-    @Value("${kakao.pay.callback.fail-url:http://localhost:5173/payment/checkout/result?r=fail}")
+    @Value("${kakao.pay.callback.fail-url:https://kkam-bbak.pages.dev/payment/checkout/result?r=fail}")
     private String failUrl;
 
     /**

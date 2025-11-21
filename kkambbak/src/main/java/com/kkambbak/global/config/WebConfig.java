@@ -15,7 +15,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:5173",
-                        "https://kkambbak.duckdns.org"
+                        "https://kkambbak.duckdns.org",
+                        "https://kkam-bbak.pages.dev"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
