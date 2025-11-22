@@ -15,6 +15,7 @@ import com.kkambbak.domain.user.exception.UserNotFoundException;
 import com.kkambbak.domain.user.exception.GuestNotFoundException;
 import com.kkambbak.domain.user.exception.InvalidGuestIdException;
 import com.kkambbak.domain.user.exception.ProfileValidationException;
+import com.kkambbak.domain.name.service.NameService;
 import com.kkambbak.global.jwt.JwtUtil;
 import com.kkambbak.global.jwt.dto.TokenDataDto;
 import com.kkambbak.global.security.UserDetailsImpl;
@@ -37,6 +38,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final NameService nameService;
 
     @Value("${app.auth.key}")
     private String authKey;
@@ -256,7 +258,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        return GetProfileDto.from(user);
+        int generationCount = nameService.getGenerationCount(userId);
+        int remainingAttempts = Math.max(0, 3 - generationCount);
+
+        return GetProfileDto.from(user, remainingAttempts);
     }
 
     @Transactional
