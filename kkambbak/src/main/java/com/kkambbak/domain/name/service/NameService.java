@@ -111,5 +111,9 @@ public class NameService {
             throw new NameCandidateParseException();
         }
     }
+
+    public int getGenerationCount(Long userId) {
+        return calculateNextAttempt(userId) - 1;
+    }
 }
 

@@ -19,8 +19,9 @@ public class GetProfileDto {
     private String countryOfOrigin;
     private String personalityOrImage;
     private String profileImage;
+    private Integer remainingNameAttempts;
 
-    public static GetProfileDto from(User user) {
+    public static GetProfileDto from(User user, Integer remainingAttempts) {
         return GetProfileDto.builder()
                 .name(user.getName())
                 .koreanName(user.getKoreanName())
@@ -29,6 +30,7 @@ public class GetProfileDto {
                 .countryOfOrigin(user.getCountryOfOrigin())
                 .personalityOrImage(user.getPersonalityOrImage())
                 .profileImage(user.getProfileImage())
+                .remainingNameAttempts(remainingAttempts)
                 .build();
     }
 }

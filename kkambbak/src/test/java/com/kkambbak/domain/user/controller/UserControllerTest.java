@@ -292,6 +292,7 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                 .countryOfOrigin("South Korea")
                 .personalityOrImage("I'm full of bright energy with a playful, charming vibe.")
                 .profileImage("https://example.com/profile.jpg")
+                .remainingNameAttempts(1)
                 .build();
         given(userService.getProfile(anyLong())).willReturn(mockProfile);
 
@@ -319,7 +320,8 @@ class UserControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("body.gender").type(JsonFieldType.STRING).description("성별 (MALE, FEMALE)"),
                                                 fieldWithPath("body.countryOfOrigin").type(JsonFieldType.STRING).description("국가명"),
                                                 fieldWithPath("body.personalityOrImage").type(JsonFieldType.STRING).description("성격/이미지 설명"),
-                                                fieldWithPath("body.profileImage").type(JsonFieldType.STRING).description("프로필 사진 URL")
+                                                fieldWithPath("body.profileImage").type(JsonFieldType.STRING).description("프로필 사진 URL"),
+                                                fieldWithPath("body.remainingNameAttempts").type(JsonFieldType.NUMBER).description("한국어 이름 생성 남은 횟수")
                                         )
                                         .build()
                         )
