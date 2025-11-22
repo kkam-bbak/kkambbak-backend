@@ -40,6 +40,8 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final NameService nameService;
 
+    private static final int NAME_GENERATION_LIMIT = 3;
+
     @Value("${app.auth.key}")
     private String authKey;
 
@@ -259,7 +261,7 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         int generationCount = nameService.getGenerationCount(userId);
-        int remainingAttempts = Math.max(0, 3 - generationCount);
+        int remainingAttempts = Math.max(0, NAME_GENERATION_LIMIT - generationCount);
 
         return GetProfileDto.from(user, remainingAttempts);
     }

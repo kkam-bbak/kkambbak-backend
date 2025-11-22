@@ -113,7 +113,7 @@ public class NameService {
     }
 
     public int getGenerationCount(Long userId) {
-        return nameHistoryRepository.countByUser_Id(userId);
+        return calculateNextAttempt(userId) - 1;
     }
 }
 
