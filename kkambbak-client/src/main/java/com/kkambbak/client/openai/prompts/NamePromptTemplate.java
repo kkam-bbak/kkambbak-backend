@@ -16,8 +16,11 @@ public class NamePromptTemplate {
     - Desired name vibe: %s
 
     Validation & Error Handling:
-    If gender is not 'male' or 'female' (case-insensitive), return exactly: 이름 생성 불가
-    If all input descriptions are meaningless or empty, return exactly: 이름 생성 불가
+    1. If gender is not 'male' or 'female' (case-insensitive), return exactly: 이름 생성 불가
+    2. If all input descriptions are meaningless or empty, return exactly: 이름 생성 불가
+    3. If user personality, image, or name vibe contains profanity, insults, discriminatory words, sexual content, or any negative/offensive terms (e.g., "바보", "멍청이", "fool", slurs, curse words):
+       → Ignore those inputs entirely and generate names ONLY based on gender with the most natural & positive harmony.
+       → DO NOT output or reflect the offensive text in any field.
 
     Rules:
     - Output exactly two Korean name sets.
