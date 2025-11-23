@@ -2,6 +2,7 @@ package com.kkambbak.domain.upload.controller;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.kkambbak.KkambbakDocumentApiTester;
+import com.kkambbak.client.r2.dto.ImageData;
 import com.kkambbak.domain.upload.service.FileStorageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -70,9 +71,9 @@ class UploadControllerTest extends KkambbakDocumentApiTester {
         // given
         String imageId = "550e8400-e29b-41d4-a716-446655440000";
         byte[] imageBytes = "fake image binary data".getBytes();
+        ImageData mockImageData = new ImageData(imageBytes, "image/webp");
 
-        when(fileStorageService.downloadImage(anyString())).thenReturn(imageBytes);
-        when(fileStorageService.getContentType(anyString())).thenReturn("image/webp");
+        when(fileStorageService.getImage(anyString())).thenReturn(mockImageData);
 
         // when & then
         this.mockMvc.perform(get("/api/v1/upload/images/{imageId}", imageId))

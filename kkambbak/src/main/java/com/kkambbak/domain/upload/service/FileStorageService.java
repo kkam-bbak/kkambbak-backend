@@ -1,5 +1,6 @@
 package com.kkambbak.domain.upload.service;
 
+import com.kkambbak.client.r2.dto.ImageData;
 import com.kkambbak.client.r2.service.ImageUploader;
 import com.kkambbak.client.r2.service.R2ImageService;
 import com.kkambbak.domain.upload.exception.*;
@@ -95,11 +96,7 @@ public class FileStorageService {
         }
     }
 
-    public byte[] downloadImage(String imageId) {
-        return r2ImageService.downloadImage(imageId);
-    }
-
-    public String getContentType(String imageId) {
-        return r2ImageService.getContentType(imageId);
+    public ImageData getImage(String imageId) {
+        return r2ImageService.getImage(imageId);
     }
 }

@@ -1,5 +1,6 @@
 package com.kkambbak.domain.upload.controller;
 
+import com.kkambbak.client.r2.dto.ImageData;
 import com.kkambbak.domain.upload.service.FileStorageService;
 import com.kkambbak.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +33,12 @@ public class UploadController {
 
     @GetMapping("/images/{imageId}")
     public ResponseEntity<byte[]> getImage(@PathVariable String imageId) {
-        byte[] imageBytes = fileStorageService.downloadImage(imageId);
-        String contentType = fileStorageService.getContentType(imageId);
+        ImageData imageData = fileStorageService.getImage(imageId);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .header(HttpHeaders.CONTENT_TYPE, imageData.contentType())
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
                 .header("Access-Control-Allow-Origin", "*")
-                .body(imageBytes);
+                .body(imageData.bytes());
     }
 }
