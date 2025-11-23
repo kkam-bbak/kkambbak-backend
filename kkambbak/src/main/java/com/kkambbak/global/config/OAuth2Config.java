@@ -46,14 +46,11 @@ public class OAuth2Config {
                         String sessionId = httpRequest.getSession().getId();
                         String redisKey = OAuth2Constants.REDIS_KEY_PREFIX + sessionId;
 
-                        // Redis에서 oauth2_prompt 확인 (FailureHandler에서 설정됨)
-                        String prompt = redisTemplate.opsForValue().get(redisKey);
+                        String prompt = redisTemplate.opsForValue().getAndDelete(redisKey);
                         if (OAuth2Constants.PROMPT_CONSENT.equals(prompt)) {
                             params.put("prompt", OAuth2Constants.PROMPT_CONSENT);
-                            redisTemplate.delete(redisKey);  // 사용 후 삭제
                         }
 
-                        // Google 전용: Refresh Token 요청
                         if (isGoogleProvider(httpRequest)) {
                             params.put("access_type", "offline");
                         }

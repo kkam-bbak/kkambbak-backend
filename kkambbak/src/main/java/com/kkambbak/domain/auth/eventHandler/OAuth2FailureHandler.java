@@ -42,7 +42,6 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                     String sessionId = request.getSession().getId();
                     String redisKey = OAuth2Constants.REDIS_KEY_PREFIX + sessionId;
 
-                    // Redis에 prompt=consent 저장 (TTL: 10분)
                     redisTemplate.opsForValue().set(
                         redisKey,
                         OAuth2Constants.PROMPT_CONSENT,
