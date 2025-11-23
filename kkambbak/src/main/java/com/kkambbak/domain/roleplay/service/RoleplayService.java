@@ -36,7 +36,7 @@ public class RoleplayService {
     private final UserRepository userRepository;
     private final RoleplayPronunciationFeedbackRepository roleplayPronunciationFeedbackRepository;
 
-    private static final double PRONUNCIATION_PASS_THRESHOLD = 70.0;
+    private static final double PRONUNCIATION_PASS_THRESHOLD = 75.0;
 
     @Transactional(readOnly = true)
     public List<RoleplayResponseDto> getAllRoleplayScenarios() {
