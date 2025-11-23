@@ -27,11 +27,28 @@ public class OAuth2Config {
                     if (attributes != null) {
                         HttpServletRequest httpRequest = attributes.getRequest();
                         String guestProviderId = httpRequest.getParameter("guestProviderId");
+                        String prompt = httpRequest.getParameter("prompt");
 
                         if (guestProviderId != null && !guestProviderId.isEmpty()) {
                             httpRequest.getSession().setAttribute("guestProviderId", guestProviderId);
                         }
+                        if (prompt != null) {
+                            httpRequest.getSession().setAttribute("oauth2_prompt", prompt);
+                        }
                     }
+                })
+                .additionalParameters(params -> {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        HttpServletRequest httpRequest = attributes.getRequest();
+                        String prompt = (String) httpRequest.getSession().getAttribute("oauth2_prompt");
+
+                        if ("consent".equals(prompt)) {
+                            params.put("prompt", "consent");
+                            httpRequest.getSession().removeAttribute("oauth2_prompt");
+                        }
+                    }
+                    params.put("access_type", "offline");
                 })
         );
 

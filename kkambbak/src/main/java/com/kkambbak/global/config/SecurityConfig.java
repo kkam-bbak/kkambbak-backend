@@ -1,6 +1,7 @@
 package com.kkambbak.global.config;
 
 import com.kkambbak.domain.auth.eventHandler.OAuth2EventHandler;
+import com.kkambbak.domain.auth.eventHandler.OAuth2FailureHandler;
 import com.kkambbak.domain.auth.service.AuthService;
 import com.kkambbak.global.jwt.JwtAuthenticationFilter;
 import com.kkambbak.global.jwt.JwtUtil;
@@ -32,6 +33,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
     private final OAuth2EventHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
     private final OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver;
 
     private static final List<String> EXCLUDE_PATHS = Arrays.asList(
@@ -61,6 +63,7 @@ public class SecurityConfig {
                                 .authorizationRequestResolver(oAuth2AuthorizationRequestResolver)
                         )
                         .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService())
                         )
