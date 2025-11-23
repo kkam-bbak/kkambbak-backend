@@ -44,7 +44,7 @@ public class OAuth2Config {
                     if (attributes != null) {
                         HttpServletRequest httpRequest = attributes.getRequest();
                         String sessionId = httpRequest.getSession().getId();
-                        String redisKey = buildRedisKey(sessionId);
+                        String redisKey = OAuth2Constants.REDIS_KEY_PREFIX + sessionId;
 
                         // Redis에서 oauth2_prompt 확인 (FailureHandler에서 설정됨)
                         String prompt = redisTemplate.opsForValue().get(redisKey);
@@ -62,10 +62,6 @@ public class OAuth2Config {
         );
 
         return resolver;
-    }
-
-    private String buildRedisKey(String sessionId) {
-        return "oauth2:prompt:" + sessionId;
     }
 
     private boolean isGoogleProvider(HttpServletRequest request) {

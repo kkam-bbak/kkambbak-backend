@@ -37,10 +37,10 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                 String errorCode = error.getErrorCode();
                 log.warn("OAuth2 authentication failed with error code: {}", errorCode);
 
-                if (OAuth2Constants.PROMPT_CONSENT.equals(errorCode)) {
+                if (OAuth2Constants.ERROR_ACCESS_DENIED.equals(errorCode)) {
                     log.info("User cancelled OAuth2 consent, setting retry flag in Redis");
                     String sessionId = request.getSession().getId();
-                    String redisKey = buildRedisKey(sessionId);
+                    String redisKey = OAuth2Constants.REDIS_KEY_PREFIX + sessionId;
 
                     // Redis에 prompt=consent 저장 (TTL: 10분)
                     redisTemplate.opsForValue().set(
@@ -63,9 +63,5 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
         }
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }
-
-    private String buildRedisKey(String sessionId) {
-        return "oauth2:prompt:" + sessionId;
     }
 }
