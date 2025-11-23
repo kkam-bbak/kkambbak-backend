@@ -39,13 +39,11 @@ public class OAuth2Config {
                         HttpServletRequest httpRequest = attributes.getRequest();
                         String prompt = (String) httpRequest.getSession().getAttribute("oauth2_prompt");
 
-                        // 세션에서 oauth2_prompt 속성 확인 (FailureHandler에서 설정됨)
                         if ("consent".equals(prompt)) {
                             params.put("prompt", "consent");
                             httpRequest.getSession().removeAttribute("oauth2_prompt");
                         }
 
-                        // Google 전용: Refresh Token 요청
                         if (isGoogleProvider(httpRequest)) {
                             params.put("access_type", "offline");
                         }
