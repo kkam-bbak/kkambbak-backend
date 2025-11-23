@@ -33,8 +33,29 @@ public class OAuth2Config {
                         }
                     }
                 })
+                .additionalParameters(params -> {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        HttpServletRequest httpRequest = attributes.getRequest();
+                        String prompt = (String) httpRequest.getSession().getAttribute("oauth2_prompt");
+
+                        if ("consent".equals(prompt)) {
+                            params.put("prompt", "consent");
+                            httpRequest.getSession().removeAttribute("oauth2_prompt");
+                        }
+
+                        if (isGoogleProvider(httpRequest)) {
+                            params.put("access_type", "offline");
+                        }
+                    }
+                })
         );
 
         return resolver;
+    }
+
+    private boolean isGoogleProvider(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return requestUri != null && requestUri.contains("/google");
     }
 }
