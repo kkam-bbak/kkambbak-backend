@@ -1,6 +1,8 @@
 package com.kkambbak.domain.upload.service;
 
+import com.kkambbak.client.r2.dto.ImageData;
 import com.kkambbak.client.r2.service.ImageUploader;
+import com.kkambbak.client.r2.service.R2ImageService;
 import com.kkambbak.domain.upload.exception.*;
 import com.kkambbak.global.util.ImageConverter;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class FileStorageService {
 
     private final ImageUploader imageUploader;
+    private final R2ImageService r2ImageService;
 
     // 이미지 파일을 업로드하고 URL을 반환
     public String uploadImage(MultipartFile file) {
@@ -91,5 +94,9 @@ public class FileStorageService {
             log.error("Failed to store base64 image", ex);
             throw new FileStorageFailedException("base64-image");
         }
+    }
+
+    public ImageData getImage(String imageId) {
+        return r2ImageService.getImage(imageId);
     }
 }
