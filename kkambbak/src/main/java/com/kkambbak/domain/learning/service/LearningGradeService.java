@@ -45,8 +45,9 @@ public class LearningGradeService {
     private final VocabularyRepository vocabularyRepository;
     private final SessionRepository sessionRepository;
     private final AzurePronunciationService pronunciationService;
+    private final AudioConvertService audioConvertService;
 
-    private static final double PASSING_PRONUNCIATION_SCORE = 60.0;
+    private static final double PASSING_PRONUNCIATION_SCORE = 75.0;
 
     public void validateBasicInputs(LearningGradeDto.GradeRequest req,
                                     MultipartFile audioFile) {
@@ -144,8 +145,8 @@ public class LearningGradeService {
     ) {
         File wavFile = null;
         try {
-            wavFile = File.createTempFile("kkambbak-pron-", ".wav");
-            audioFile.transferTo(wavFile.toPath());
+
+            wavFile = audioConvertService.toWav(audioFile);
 
             String referenceText = vocab.getKorean();
 
@@ -166,9 +167,15 @@ public class LearningGradeService {
         } finally {
             if (wavFile != null) {
                 try {
-                    Files.deleteIfExists(wavFile.toPath());
+                    boolean deleted = Files.deleteIfExists(wavFile.toPath());
+                    if (deleted) {
+                        log.info("[CLEANUP] 임시 WAV 파일 삭제 성공: {}", wavFile.getAbsolutePath());
+                    } else {
+                        log.debug("[CLEANUP] 삭제할 임시 WAV 파일이 없음 또는 이미 삭제됨: {}",
+                                wavFile.getAbsolutePath());
+                    }
                 } catch (IOException ex) {
-                    log.warn("임시 WAV 파일 삭제 중 오류: {}", wavFile.getAbsolutePath(), ex);
+                    log.warn("[CLEANUP] 임시 WAV 파일 삭제 중 오류: {}", wavFile.getAbsolutePath(), ex);
                 }
             }
         }
