@@ -3,6 +3,8 @@ package com.kkambbak.domain.upload.controller;
 import com.kkambbak.domain.upload.service.FileStorageService;
 import com.kkambbak.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,5 +28,17 @@ public class UploadController {
         response.put("url", fileUrl);
 
         return ApiResponse.ok(response);
+    }
+
+    @GetMapping("/images/{imageId}")
+    public ResponseEntity<byte[]> getImage(@PathVariable String imageId) {
+        byte[] imageBytes = fileStorageService.downloadImage(imageId);
+        String contentType = fileStorageService.getContentType(imageId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
+                .header("Access-Control-Allow-Origin", "*")
+                .body(imageBytes);
     }
 }

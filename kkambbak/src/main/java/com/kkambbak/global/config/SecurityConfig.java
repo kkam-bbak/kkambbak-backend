@@ -41,7 +41,7 @@ public class SecurityConfig {
             "/actuator/**", "/actuator/prometheus", "/health", "/ready", "/error", "/favicon.ico",
             "/api/v1/users/test-login", "/api/v1/users/guest-login", "/api/v1/users/refresh",
             "/api/v1/auth/verify-email", "/api/v1/auth/resend-otp", "/api/v1/auth/current-email",
-            "/api/v1/payments/approve", "/api/v1/upload/image",
+            "/api/v1/payments/approve", "/api/v1/upload/**",
             "/grafana/**", "/prometheus/**"
     );
 

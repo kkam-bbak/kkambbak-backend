@@ -7,15 +7,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.restdocs.request.RequestDocumentation;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.multipart;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class UploadControllerTest extends KkambbakDocumentApiTester {
 
@@ -56,6 +59,46 @@ class UploadControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("status.message").type(JsonFieldType.STRING).description("상태 메시지"),
                                                 fieldWithPath("status.description").type(JsonFieldType.STRING).description("상태 설명").optional(),
                                                 fieldWithPath("body.url").type(JsonFieldType.STRING).description("업로드된 이미지 URL (Cloudflare R2 호스팅, WebP 포맷)")
+                                        )
+                                        .build()
+                        )
+                ));
+    }
+
+    @Test
+    void getImage() throws Exception {
+        // given
+        String imageId = "550e8400-e29b-41d4-a716-446655440000";
+        byte[] imageBytes = "fake image binary data".getBytes();
+
+        when(fileStorageService.downloadImage(anyString())).thenReturn(imageBytes);
+        when(fileStorageService.getContentType(anyString())).thenReturn("image/webp");
+
+        // when & then
+        this.mockMvc.perform(get("/api/v1/upload/images/{imageId}", imageId))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Content-Type"))
+                .andExpect(header().string("Content-Type", "image/webp"))
+                .andExpect(header().string("Cache-Control", "public, max-age=604800"))
+                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
+                .andDo(document("get-image",
+                        resource(
+                                ResourceSnippetParameters.builder()
+                                        .tag("upload")
+                                        .summary("이미지 조회")
+                                        .description("R2에 저장된 이미지를 바이너리로 반환합니다.\n\n" +
+                                                "**요청 파라미터:**\n" +
+                                                "- imageId (필수): 이미지 식별자 (UUID)\n" +
+                                                "  예시: 550e8400-e29b-41d4-a716-446655440000\n\n" +
+                                                "**응답 헤더:**\n" +
+                                                "- Content-Type: 이미지 MIME 타입 (image/webp, image/jpeg 등)\n" +
+                                                "- Cache-Control: 7일간 브라우저 캐싱\n" +
+                                                "- Access-Control-Allow-Origin: CORS 허용\n\n" +
+                                                "**응답 바디:**\n" +
+                                                "- 이미지 바이너리 데이터")
+                                        .pathParameters(
+                                                RequestDocumentation.parameterWithName("imageId")
+                                                        .description("이미지 식별자 (UUID 형식)")
                                         )
                                         .build()
                         )
