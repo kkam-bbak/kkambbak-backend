@@ -25,21 +25,24 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
         String targetUrl = loginUri;
 
         if (exception instanceof OAuth2AuthenticationException oauth2Exception) {
-            String errorCode = oauth2Exception.getError().getErrorCode();
+            var error = oauth2Exception.getError();
+            if (error != null) {
+                String errorCode = error.getErrorCode();
+                log.warn("OAuth2 authentication failed with error code: {}", errorCode);
 
-            if ("access_denied".equals(errorCode)) {
-                request.getSession().setAttribute("oauth2_prompt", "consent");
-                targetUrl = UriComponentsBuilder.fromUriString(loginUri)
-                        .queryParam("error", "consent_cancelled")
-                        .queryParam("retryConsent", "true")
-                        .build().toUriString();
+                if ("access_denied".equals(errorCode)) {
+                    log.info("User cancelled OAuth2 consent, setting retry flag");
+                    request.getSession().setAttribute("oauth2_prompt", "consent");
+                    targetUrl = UriComponentsBuilder.fromUriString(loginUri)
+                            .queryParam("error", "consent_cancelled")
+                            .queryParam("retryConsent", "true")
+                            .build().toUriString();
+                }
+            } else {
+                log.error("OAuth2 error object is null");
             }
-        } else if (exception.getMessage() != null && exception.getMessage().contains("access_denied")) {
-            request.getSession().setAttribute("oauth2_prompt", "consent");
-            targetUrl = UriComponentsBuilder.fromUriString(loginUri)
-                    .queryParam("error", "consent_cancelled")
-                    .queryParam("retryConsent", "true")
-                    .build().toUriString();
+        } else {
+            log.error("OAuth2 authentication failed: {}", exception.getMessage());
         }
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

@@ -27,13 +27,9 @@ public class OAuth2Config {
                     if (attributes != null) {
                         HttpServletRequest httpRequest = attributes.getRequest();
                         String guestProviderId = httpRequest.getParameter("guestProviderId");
-                        String prompt = httpRequest.getParameter("prompt");
 
                         if (guestProviderId != null && !guestProviderId.isEmpty()) {
                             httpRequest.getSession().setAttribute("guestProviderId", guestProviderId);
-                        }
-                        if (prompt != null) {
-                            httpRequest.getSession().setAttribute("oauth2_prompt", prompt);
                         }
                     }
                 })
@@ -43,15 +39,25 @@ public class OAuth2Config {
                         HttpServletRequest httpRequest = attributes.getRequest();
                         String prompt = (String) httpRequest.getSession().getAttribute("oauth2_prompt");
 
+                        // 세션에서 oauth2_prompt 속성 확인 (FailureHandler에서 설정됨)
                         if ("consent".equals(prompt)) {
                             params.put("prompt", "consent");
                             httpRequest.getSession().removeAttribute("oauth2_prompt");
                         }
+
+                        // Google 전용: Refresh Token 요청
+                        if (isGoogleProvider(httpRequest)) {
+                            params.put("access_type", "offline");
+                        }
                     }
-                    params.put("access_type", "offline");
                 })
         );
 
         return resolver;
+    }
+
+    private boolean isGoogleProvider(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return requestUri != null && requestUri.contains("/google");
     }
 }
