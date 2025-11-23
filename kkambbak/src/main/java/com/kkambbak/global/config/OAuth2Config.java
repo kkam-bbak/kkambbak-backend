@@ -1,7 +1,10 @@
 package com.kkambbak.global.config;
 
+import com.kkambbak.domain.auth.constant.OAuth2Constants;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -10,7 +13,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Configuration
+@RequiredArgsConstructor
 public class OAuth2Config {
+
+    private final StringRedisTemplate redisTemplate;
 
     @Bean
     public OAuth2AuthorizationRequestResolver oAuth2AuthorizationRequestResolver(
@@ -33,8 +39,30 @@ public class OAuth2Config {
                         }
                     }
                 })
+                .additionalParameters(params -> {
+                    ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                    if (attributes != null) {
+                        HttpServletRequest httpRequest = attributes.getRequest();
+                        String sessionId = httpRequest.getSession().getId();
+                        String redisKey = OAuth2Constants.REDIS_KEY_PREFIX + sessionId;
+
+                        String prompt = redisTemplate.opsForValue().getAndDelete(redisKey);
+                        if (OAuth2Constants.PROMPT_CONSENT.equals(prompt)) {
+                            params.put("prompt", OAuth2Constants.PROMPT_CONSENT);
+                        }
+
+                        if (isGoogleProvider(httpRequest)) {
+                            params.put("access_type", "offline");
+                        }
+                    }
+                })
         );
 
         return resolver;
+    }
+
+    private boolean isGoogleProvider(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return requestUri != null && requestUri.equals("/oauth2/authorization/google");
     }
 }
