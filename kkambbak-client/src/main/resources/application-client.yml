@@ -59,8 +59,8 @@ openai:
     key: ${OPENAI_API_KEY:}
 
   timeout:
-    connect-ms: 5000
-    read-s: 60
+    connect-ms: 15000
+    read-s: 120
     write-s: 10
 
 

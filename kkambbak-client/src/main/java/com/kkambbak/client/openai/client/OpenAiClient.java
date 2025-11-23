@@ -18,7 +18,7 @@ import java.util.Map;
 public class OpenAiClient {
     private final OpenAiSchemaFactory openAiSchemaFactory;
     private final OpenAiService openAiService;
-    private static final double DEFAULT_TEMPERATURE = 0.7;
+    private static final double DEFAULT_TEMPERATURE = 0.9;
 
     private static final String KEY_MODEL = "model";
     private static final String KEY_MESSAGES = "messages";
