@@ -81,7 +81,6 @@ class UploadControllerTest extends KkambbakDocumentApiTester {
                 .andExpect(header().exists("Content-Type"))
                 .andExpect(header().string("Content-Type", "image/webp"))
                 .andExpect(header().string("Cache-Control", "public, max-age=604800"))
-                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
                 .andDo(document("get-image",
                         resource(
                                 ResourceSnippetParameters.builder()

@@ -38,7 +38,6 @@ public class UploadController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, imageData.contentType())
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=604800")
-                .header("Access-Control-Allow-Origin", "*")
                 .body(imageData.bytes());
     }
 }
