@@ -71,6 +71,8 @@ public class AzurePronunciationService {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
+                log.error("[Azure Error] Status: {}", response.statusCode());
+                log.error("[Azure Error] Body: {}", response.body());
                 throw new PronunciationUnavailableException();
             }
 
@@ -78,6 +80,7 @@ public class AzurePronunciationService {
             JsonNode root = mapper.readTree(response.body());
             JsonNode nbest = root.path("NBest");
             if (!nbest.isArray() || nbest.size() == 0) {
+                log.error("[Azure Error] Invalid NBest: {}", response.body());
                 throw new PronunciationFailException();
             }
 
