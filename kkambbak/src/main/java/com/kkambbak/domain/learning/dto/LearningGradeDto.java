@@ -31,18 +31,21 @@ public class LearningGradeDto {
         private boolean finished; // 학습이 끝났는지 여부
         private Next next; // 다음 문제에서 학습할 단어 정보
         private CorrectAnswer correctAnswer; // 오답 확정 시, 정답에 대한 단어의 정보를 보여주기 위해
+        private Double score;
 
         public static GradeResponse of(boolean correct,
                                        boolean moved,
                                        boolean finished,
                                        Next next,
-                                       CorrectAnswer correctAnswer) {
+                                       CorrectAnswer correctAnswer,
+                                       Double score) {
             return GradeResponse.builder()
                     .correct(correct)
                     .moved(moved)
                     .finished(finished)
                     .next(next)
                     .correctAnswer(correctAnswer)
+                    .score(score)
                     .build();
         }
     }

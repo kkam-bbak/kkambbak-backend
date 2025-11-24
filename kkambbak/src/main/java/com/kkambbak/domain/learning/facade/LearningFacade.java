@@ -178,7 +178,10 @@ public class LearningFacade {
         int orderIndex = learningGradeService.findOrderIndex(vocabIds, req.getItemId());
 
         GradeAction action = req.getAction();
-        boolean isCorrect = learningGradeService.evaluateCorrectness(action, audioFile, currentVocab);
+
+        var eval = learningGradeService.evaluateCorrectness(action, audioFile, currentVocab);
+        boolean isCorrect = eval.correct();
+        Double score = eval.score();
 
         learningGradeService.applyGradingResult(result, currentVocab, action, isCorrect);
 
@@ -194,7 +197,8 @@ public class LearningFacade {
                 flow.moved(),
                 flow.finished(),
                 flow.next(),
-                flow.correctAnswer()
+                flow.correctAnswer(),
+                score
         );
     }
 

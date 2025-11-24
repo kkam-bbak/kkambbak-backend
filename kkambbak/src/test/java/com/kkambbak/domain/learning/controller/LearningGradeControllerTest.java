@@ -43,7 +43,8 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                         .english("school")
                         .imageUrl("img.png")
                         .build(),
-                null
+                null,
+                88.5
         );
 
         given(learningFacade.gradeLearning(anyLong(), anyLong(), any(), any()))
@@ -86,6 +87,7 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                         - finished: 학습 세션이 종료되었는지 여부
                                         - next: 다음 단어 정보 (moved=true & finished=false 때 반환)
                                         - correctAnswer: 오답일 때 정답으로 보여줄 단어 정보 (NEXT_AFTER_WRONG일 때 사용)
+                                        - score : 발음 평가 점수
                                         """)
                                         .requestHeaders(
                                                 headerWithName("Authorization").description("Bearer 토큰")
@@ -109,7 +111,8 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                                 fieldWithPath("body.next.english").optional().type(JsonFieldType.STRING).description("다음 단어 영어"),
                                                 fieldWithPath("body.next.imageUrl").optional().type(JsonFieldType.STRING).description("다음 단어 이미지 URL"),
 
-                                                fieldWithPath("body.correctAnswer").optional().type(JsonFieldType.OBJECT).description("오답 시 정답 정보")
+                                                fieldWithPath("body.correctAnswer").optional().type(JsonFieldType.OBJECT).description("오답 시 정답 정보"),
+                                                fieldWithPath("body.score").optional().type(JsonFieldType.NUMBER).description("발음 평가 점수")
                                         )
                                         .build()
                         )

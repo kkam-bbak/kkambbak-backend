@@ -49,6 +49,8 @@ public class LearningGradeService {
 
     private static final double PASSING_PRONUNCIATION_SCORE = 75.0;
 
+    public record PronunciationEvalResult(boolean correct, Double score) {}
+
     public void validateBasicInputs(LearningGradeDto.GradeRequest req,
                                     MultipartFile audioFile) {
         if (req.getAction() == null) {
@@ -124,14 +126,14 @@ public class LearningGradeService {
      * Azure STT + 발음 평가 기반 정답 여부 판단
      * (NEXT_AFTER_WRONG인 경우는 오답 처리 후 다음 문제로 넘어가기 때문에 평가하지 않음)
      */
-    public boolean evaluateCorrectness(
-            GradeAction action,
-            MultipartFile audioFile,
+    public PronunciationEvalResult evaluateCorrectness(
+            GradeAction action, MultipartFile audioFile,
             Vocabulary vocab
     ) {
         if (action == GradeAction.NEXT_AFTER_WRONG) {
-            return false;
+            return new PronunciationEvalResult(false, null);
         }
+
         if (audioFile == null || audioFile.isEmpty()) {
             throw new InvalidGradeAttemptException("audioFile이 필요합니다.");
         }
@@ -139,7 +141,7 @@ public class LearningGradeService {
     }
 
     // 실제 발음 평가 로직
-    private boolean evaluatePronunciationWithAzure(
+    private PronunciationEvalResult evaluatePronunciationWithAzure(
             MultipartFile audioFile,
             Vocabulary vocab
     ) {
@@ -157,10 +159,10 @@ public class LearningGradeService {
             }
 
             double score = result.getPronunciationScore();
+            boolean correct = score >= PASSING_PRONUNCIATION_SCORE;
 
-            return score >= PASSING_PRONUNCIATION_SCORE;
-
-        } catch (IOException e) {
+            return new PronunciationEvalResult(correct, score);
+    }catch (IOException e) {
             log.error("음성 파일 처리 중 오류 발생", e);
             throw new PronunciationUnavailableException();
 
