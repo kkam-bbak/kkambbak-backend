@@ -62,6 +62,7 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                 .file(audioFile)
                                 .param("action", GradeAction.GRADE.name())
                                 .param("itemId", "1")
+                                .param("resultId", "10")
                                 .header("Authorization", TEST_ACCESS_TOKEN)
                 )
                 .andExpect(status().isOk())
@@ -79,6 +80,7 @@ public class LearningGradeControllerTest extends KkambbakDocumentApiTester {
                                          GRADE → 음성을 기반으로 발음 평가 후 정답 여부 판단
                                          NEXT_AFTER_WRONG → 발음 평가 없이 오답으로 처리하고 다음 단어로 이동
                                         - itemId: 현재 채점 중인 단어(Vocabulary)의 ID
+                                        - resultId : 현재 진행 중인 LearningResult의 ID
                                         - audioFile: 업로드한 음성 파일 (action=GRADE일 때 필수)
                                 
                                         응답

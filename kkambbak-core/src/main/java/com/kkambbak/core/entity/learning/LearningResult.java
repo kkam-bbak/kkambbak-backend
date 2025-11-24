@@ -3,8 +3,12 @@ package com.kkambbak.core.entity.learning;
 import com.kkambbak.core.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "learning_results")
@@ -39,13 +43,19 @@ public class LearningResult extends BaseEntity {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;   // 소요 시간(초)
 
-    public static LearningResult startOf(Long userId, Session session, int totalCount) {
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "vocabulary_ids", nullable = false, columnDefinition = "jsonb")
+    @Builder.Default
+    private List<Long> vocabularyIds = new ArrayList<>();
+
+    public static LearningResult startOf(Long userId, Session session, List<Long> vocabIds) {
         return LearningResult.builder()
                 .userId(userId)
                 .session(session)
-                .totalCount(totalCount)
+                .totalCount(vocabIds.size())
                 .correctCount(0)
                 .startedAt(java.time.LocalDateTime.now())
+                .vocabularyIds(vocabIds)
                 .build();
     }
 

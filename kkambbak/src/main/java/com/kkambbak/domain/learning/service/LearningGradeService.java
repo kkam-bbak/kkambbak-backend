@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -59,6 +60,9 @@ public class LearningGradeService {
         if (req.getItemId() == null) {
             throw new InvalidGradeAttemptException("itemId는 필수입니다.");
         }
+        if(req.getResultId() == null) {
+            throw new InvalidGradeAttemptException("resultId는 필수입니다");
+        }
 
         if (req.getAction() == GradeAction.GRADE) {
             if (audioFile == null || audioFile.isEmpty()) {
@@ -75,6 +79,21 @@ public class LearningGradeService {
                 ));
     }
 
+    public LearningResult findResultById(Long userId, Long sessionId, Long resultId) {
+        LearningResult result = learningResultRepository.findById(resultId)
+                .orElseThrow(()-> new ResultNotFoundException(
+                        "학습 결과를 찾을 수 없습니다. resultId = " + resultId
+                ));
+
+        if(!Objects.equals(result.getUserId(), userId) || !Objects.equals(result.getSession().getId(), sessionId)) {
+            throw new ResultNotFoundException(
+                    "해당 사용자의 세션 결과가 아닙니다. userId =%d, sessionId=%d, resultId = %d"
+                            .formatted(userId, sessionId, resultId)
+            );
+        }
+        return result;
+    }
+
     // 유저 + 세션 기준 최신 LearningResult
     public LearningResult findLatestResult(Long userId, Long sessionId) {
         List<LearningResult> results =
@@ -89,14 +108,17 @@ public class LearningGradeService {
     }
 
     // 세션 단어 순서 로드
-    public List<Long> loadVocabOrder(Long sessionId) {
-        List<Long> vocabIds = sessionVocabularyRepository
-                .findVocabularyIdsOrderByVocabIdAsc(sessionId);
+    public List<Long> loadVocabOrder(LearningResult result, Long sessionId) {
+        List<Long> vocabIds = result.getVocabularyIds();
 
-        if (vocabIds.isEmpty()) {
-            throw new LearningDataInconsistencyException(
-                    "세션에 연결된 단어가 없습니다. sessionId=" + sessionId
-            );
+        if (vocabIds == null || vocabIds.isEmpty()) {
+            vocabIds = sessionVocabularyRepository
+                    .findVocabularyIdsOrderByVocabIdAsc(sessionId);
+            if (vocabIds.isEmpty()) {
+                throw new LearningDataInconsistencyException(
+                        "세션에 연결된 단어가 없습니다. sessionId=" + sessionId
+                );
+            }
         }
         return vocabIds;
     }

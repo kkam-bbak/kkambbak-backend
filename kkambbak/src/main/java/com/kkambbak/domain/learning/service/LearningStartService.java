@@ -88,9 +88,9 @@ public class LearningStartService {
 
     // 새 LearningResult 생성 (시작 시 호출)
     @Transactional
-    public LearningResult createNewResult(Long userId, Session session, int totalCount) {
+    public LearningResult createNewResult(Long userId, Session session, List<Long> vocabIds) {
         return learningResultRepository.save(
-                LearningResult.startOf(userId, session, totalCount)
+                LearningResult.startOf(userId, session, vocabIds)
         );
     }
 

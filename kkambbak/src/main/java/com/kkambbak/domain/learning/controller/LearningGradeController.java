@@ -27,6 +27,7 @@ public class LearningGradeController {
             @PathVariable Long sessionId,
             @RequestParam("action") GradeAction action,
             @RequestParam("itemId") Long itemId,
+            @RequestParam("resultId") Long resultId,
             @RequestParam(value = "audioFile", required = false) MultipartFile audioFile
     ) {
 
@@ -36,6 +37,7 @@ public class LearningGradeController {
         LearningGradeDto.GradeRequest request = LearningGradeDto.GradeRequest.builder()
                 .action(action)
                 .itemId(itemId)
+                .resultId(resultId)
                 .build();
 
         var response = learningFacade.gradeLearning(

@@ -18,6 +18,9 @@ public class LearningGradeDto {
         // 현재 채점중인 단어 id (Vocabulary.id = itemId)
         @NotNull
         private Long itemId;
+
+        @NotNull
+        private Long resultId;
     }
 
 

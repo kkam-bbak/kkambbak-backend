@@ -131,7 +131,7 @@ public class LearningFacade {
             default -> throw new InvalidStartParamException("지원하지 않는 학습 모드입니다: " + mode);
         }
 
-        LearningResult result = learningStartService.createNewResult(userId, session, vocabIds.size());
+        LearningResult result = learningStartService.createNewResult(userId, session, vocabIds);
 
         LearningStartDto.StartResponse.FirstVocabulary firstVocabulary =
                 learningStartService.makeFirstVocabulary(vocabIds.get(FIRST_VOCABULARY_INDEX));
@@ -172,8 +172,8 @@ public class LearningFacade {
         learningGradeService.validateBasicInputs(req, audioFile);
 
         Session session = learningGradeService.loadSession(sessionId);
-        LearningResult result = learningGradeService.findLatestResult(userId, sessionId);
-        List<Long> vocabIds = learningGradeService.loadVocabOrder(sessionId);
+        LearningResult result = learningGradeService.findResultById(userId, sessionId, req.getResultId());
+        List<Long> vocabIds = learningGradeService.loadVocabOrder(result, sessionId);
         Vocabulary currentVocab = learningGradeService.loadVocabulary(req.getItemId());
         int orderIndex = learningGradeService.findOrderIndex(vocabIds, req.getItemId());
 
