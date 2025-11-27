@@ -1,27 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: kkambbak-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: ${DB_NAME:-kkambbak}
-      POSTGRES_USER: ${DB_USERNAME:-kkambbak}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-kkambbak123}
-      TZ: Asia/Seoul
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - kkambbak-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-kkambbak}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: kkambbak-redis
@@ -39,12 +18,8 @@ services:
       timeout: 3s
       retries: 3
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: api
-    image: ${DOCKERHUB_USERNAME}/kkambbak:latest
+  api:
+    image: ${DOCKERHUB_USERNAME}/kkambbak:develop
     container_name: kkambbak
     restart: unless-stopped
     ports:
@@ -57,19 +32,13 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - kkambbak-network
 
   scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: scheduler
-    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:latest
+    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:develop
     container_name: kkambbak-scheduler
     restart: unless-stopped
     env_file:
@@ -77,8 +46,67 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      app:
-        condition: service_started
+      - api
+    networks:
+      - kkambbak-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kkambbak-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - kkambbak-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: kkambbak-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - kkambbak-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: kkambbak-promtail
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - ./logs:/var/log/app
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - kkambbak-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kkambbak-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+      - loki
     networks:
       - kkambbak-network
 
@@ -87,5 +115,7 @@ networks:
     driver: bridge
 
 volumes:
-  postgres-data:
   redis-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:
