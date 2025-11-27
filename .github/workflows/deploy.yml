@@ -189,7 +189,7 @@ jobs:
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             GRAFANA_URL=${{ secrets.GRAFANA_URL }}
             PROMETHEUS_URL=${{ secrets.PROMETHEUS_URL }}
-            IMAGE_TAG=latest
+            IMAGE_TAG=${{ steps.tag.outputs.TAG_NAME }}
             EOF
 
             # 로그 디렉토리 생성
