@@ -19,7 +19,7 @@ services:
       retries: 3
 
   api:
-    image: ${DOCKERHUB_USERNAME}/kkambbak:develop
+    image: ${DOCKERHUB_USERNAME}/kkambbak:${IMAGE_TAG:-latest}
     container_name: kkambbak
     restart: unless-stopped
     ports:
@@ -38,7 +38,7 @@ services:
       - kkambbak-network
 
   scheduler:
-    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:develop
+    image: ${DOCKERHUB_USERNAME}/kkambbak-scheduler:${IMAGE_TAG:-latest}
     container_name: kkambbak-scheduler
     restart: unless-stopped
     env_file:
@@ -46,7 +46,8 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      - api
+      api:
+        condition: service_started
     networks:
       - kkambbak-network
 
@@ -62,6 +63,8 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--web.external-url=${PROMETHEUS_URL}'
+      - '--web.route-prefix=/'
     networks:
       - kkambbak-network
 
@@ -104,6 +107,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_URL}
     depends_on:
       - prometheus
       - loki

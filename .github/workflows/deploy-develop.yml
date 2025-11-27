@@ -170,6 +170,7 @@ jobs:
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             GRAFANA_URL=${{ secrets.GRAFANA_URL }}
             PROMETHEUS_URL=${{ secrets.PROMETHEUS_URL }}
+            IMAGE_TAG=develop
             EOF
 
             # 로그 디렉토리 생성
