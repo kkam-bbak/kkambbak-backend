@@ -41,7 +41,7 @@ jobs:
           name: monitoring-configs
           path: monitoring/
 
-  dockerize:
+  docker:
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -85,20 +85,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
       - name: Download monitoring configs
         uses: actions/download-artifact@v4
         with:
           name: monitoring-configs
           path: ./monitoring
 
-      - name: Upload monitoring configs to server
+      - name: Upload deployment files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.NCP_HOST }}
           username: ${{ secrets.NCP_USERNAME }}
           key: ${{ secrets.NCP_SSH_KEY }}
           password: ${{ secrets.NCP_PASSWORD }}
-          source: "./monitoring/*"
+          source: "docker-compose.yml,monitoring/*"
           target: "/home/ubuntu/kkambbak/"
           strip_components: 0
 
@@ -110,8 +117,11 @@ jobs:
           key: ${{ secrets.NCP_SSH_KEY }}
           password: ${{ secrets.NCP_PASSWORD }}
           script: |
+            set -e
+            cd /home/ubuntu/kkambbak
+
             # .env 파일 생성
-            cat > /tmp/.env <<'EOF'
+            cat > .env <<'EOF'
             DB_URL=${{ secrets.DB_URL }}
             DB_USERNAME=${{ secrets.DB_USERNAME }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
@@ -158,147 +168,24 @@ jobs:
             GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            GRAFANA_URL=${{ secrets.GRAFANA_URL }}
+            PROMETHEUS_URL=${{ secrets.PROMETHEUS_URL }}
+            IMAGE_TAG=develop
             EOF
 
-            # Docker 로그인
-            echo ${{ secrets.DOCKERHUB_TOKEN }} | /usr/bin/docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-
-            # 최신 이미지 pull
-            /usr/bin/docker pull ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
-            /usr/bin/docker pull ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
-
-            # Docker 네트워크 생성 (없으면)
-            /usr/bin/docker network create kkambbak-network || true
-
-            # Redis 데이터 볼륨 생성 (없으면)
-            /usr/bin/docker volume create redis-data || true
-
-            # 기존 Redis 컨테이너 중지 및 제거
-            /usr/bin/docker stop kkambbak-redis || true
-            /usr/bin/docker rm kkambbak-redis || true
-
-            # Redis 컨테이너 실행 (데이터 보존)
-            /usr/bin/docker run -d \
-              --name kkambbak-redis \
-              --restart unless-stopped \
-              -p 6379:6379 \
-              --network kkambbak-network \
-              -v redis-data:/data \
-              redis:7-alpine redis-server --appendonly yes
-
-            # 기존 애플리케이션 컨테이너 중지 및 제거
-            /usr/bin/docker stop kkambbak || true
-            /usr/bin/docker rm kkambbak || true
-
             # 로그 디렉토리 생성
-            mkdir -p /home/ubuntu/kkambbak/logs
+            mkdir -p logs
 
-            # 애플리케이션 컨테이너 실행 (포트 8080)
-            /usr/bin/docker run -d \
-              --name kkambbak \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -p 8080:8080 \
-              -v /home/ubuntu/kkambbak/logs:/app/logs \
-              --env-file /tmp/.env \
-              ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+            # Docker 로그인
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-            # 기존 스케줄러 컨테이너 중지 및 제거
-            /usr/bin/docker stop kkambbak-scheduler || true
-            /usr/bin/docker rm kkambbak-scheduler || true
-
-            # 스케줄러 컨테이너 실행
-            /usr/bin/docker run -d \
-              --name kkambbak-scheduler \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -v /home/ubuntu/kkambbak/logs:/app/logs \
-              --env-file /tmp/.env \
-              ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
-
-            # 모니터링 스택 배포
-
-            # 기존 모니터링 컨테이너 중지 및 제거
-            /usr/bin/docker stop kkambbak-prometheus || true
-            /usr/bin/docker rm kkambbak-prometheus || true
-            /usr/bin/docker stop kkambbak-loki || true
-            /usr/bin/docker rm kkambbak-loki || true
-            /usr/bin/docker stop kkambbak-promtail || true
-            /usr/bin/docker rm kkambbak-promtail || true
-            /usr/bin/docker stop kkambbak-grafana || true
-            /usr/bin/docker rm kkambbak-grafana || true
-
-            # 모니터링 볼륨 생성
-            /usr/bin/docker volume create prometheus-data || true
-            /usr/bin/docker volume create loki-data || true
-            /usr/bin/docker volume create grafana-data || true
-
-            # Prometheus 실행
-            /usr/bin/docker run -d \
-              --name kkambbak-prometheus \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -p 9090:9090 \
-              -v /home/ubuntu/kkambbak/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-              -v prometheus-data:/prometheus \
-              prom/prometheus:latest \
-              --config.file=/etc/prometheus/prometheus.yml \
-              --storage.tsdb.path=/prometheus \
-              --web.external-url=${{ secrets.PROMETHEUS_URL }} \
-              --web.route-prefix=/
-
-            # Loki 실행
-            /usr/bin/docker run -d \
-              --name kkambbak-loki \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -p 3100:3100 \
-              -v /home/ubuntu/kkambbak/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml \
-              -v loki-data:/loki \
-              grafana/loki:latest \
-              -config.file=/etc/loki/local-config.yaml
-
-            # Loki & Prometheus IP 주소 
-            sleep 2
-            LOKI_IP=$(/usr/bin/docker inspect kkambbak-loki -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-            PROMETHEUS_IP=$(/usr/bin/docker inspect kkambbak-prometheus -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-
-            # Promtail 설정 생성
-            /bin/sed -i "s|http://loki:3100|http://${LOKI_IP}:3100|g" /home/ubuntu/kkambbak/monitoring/promtail/promtail-config.yml
-
-            # Prometheus 설정 생성
-            /bin/sed -i "s|prometheus:9090|${PROMETHEUS_IP}:9090|g" /home/ubuntu/kkambbak/monitoring/prometheus/prometheus.yml
-
-            # Grafana 데이터소스 설정 생성
-            /bin/sed "s|http://prometheus:9090|http://${PROMETHEUS_IP}:9090|g; s|http://loki:3100|http://${LOKI_IP}:3100|g" /home/ubuntu/kkambbak/monitoring/grafana/provisioning/datasources/datasources.yml > /tmp/datasources.yml
-            mv /tmp/datasources.yml /home/ubuntu/kkambbak/monitoring/grafana/provisioning/datasources/datasources.yml
-
-            # Promtail 실행
-            /usr/bin/docker run -d \
-              --name kkambbak-promtail \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -v /home/ubuntu/kkambbak/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml \
-              -v /home/ubuntu/kkambbak/logs:/var/log/app \
-              grafana/promtail:latest \
-              -config.file=/etc/promtail/config.yml
-
-            # Grafana 실행
-            /usr/bin/docker run -d \
-              --name kkambbak-grafana \
-              --restart unless-stopped \
-              --network kkambbak-network \
-              -p 3001:3000 \
-              -v grafana-data:/var/lib/grafana \
-              -v /home/ubuntu/kkambbak/monitoring/grafana/provisioning:/etc/grafana/provisioning \
-              -e GF_SECURITY_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }} \
-              -e GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }} \
-              -e GF_USERS_ALLOW_SIGN_UP=false \
-              -e GF_SERVER_ROOT_URL=${{ secrets.GRAFANA_URL }} \
-              grafana/grafana:latest
+            # docker-compose로 배포
+            docker-compose pull
+            docker-compose up -d --remove-orphans
 
             # 사용하지 않는 이미지 정리
-            /usr/bin/docker image prune -af
+            docker image prune -af
 
       - name: Notify Discord (배포 성공)
         if: success()
