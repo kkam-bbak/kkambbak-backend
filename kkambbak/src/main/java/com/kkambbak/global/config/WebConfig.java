@@ -16,7 +16,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:5173",
                         "https://kkambbak.duckdns.org",
-                        "https://kkam-bbak.pages.dev"
+                        "https://kkam-bbak.pages.dev",
+                        "https://develop.kkam-bbak.pages.dev"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
