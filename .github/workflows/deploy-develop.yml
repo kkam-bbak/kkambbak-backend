@@ -88,6 +88,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: docker
+    #Todo: 서버 배포 후 if: false 코드 지우기
+    if: false  # 서버가 꺼져있어서 임시로 비활성화
     steps:
       - name: Checkout source code
         uses: actions/checkout@v5
