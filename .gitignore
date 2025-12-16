@@ -39,6 +39,9 @@ out/
 
 ### Setting ###
 .env
+claude.md
+task.md
+/task/
 
 ### Auth ###
 certbot/conf

@@ -5,14 +5,69 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+  profiles:
+    include:
+      - core
+      - client
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+server:
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
+      protocol-header-value: https
+
+jwt:
+  secret: ${JWT_SECRET:test-jwt-secret-key-for-testing-minimum-256-bits-required-for-hs256-algorithm-security}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:86400000}
+
+app:
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/oauth2/redirect}
+    login-uri: ${OAUTH2_LOGIN_URI:https://kkam-bbak.pages.dev/login}
+  email:
+    redirect-uri: ${EMAIL_REDIRECT_URI:http://localhost:3000/verify-email}
+    otp-expiry-minutes: ${EMAIL_OTP_EXPIRY_MINUTES:5}
+  auth:
+    key: ${AUTH_KEY:test-auth-key-1234}
+  user:
+    default-profile-image: ${DEFAULT_PROFILE_IMAGE:https://DEFAULT_PROFILE_IMAGE}
+
+# Actuator & Prometheus 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:default}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+
+media:
+  ffmpeg:
+    path: ${MEDIA_FFMPEG_PATH:ffmpeg}
+
+
+
+
+

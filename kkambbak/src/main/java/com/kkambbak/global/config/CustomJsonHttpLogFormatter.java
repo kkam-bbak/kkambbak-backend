@@ -21,9 +21,13 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
     @Override
     public String format(Precorrelation precorrelation, HttpRequest request) throws IOException {
         try {
-            MDC.put(MDC_METHOD, request.getMethod());
-            MDC.put(MDC_PATH, request.getPath());
-            MDC.put(MDC_QUERY, request.getQuery());
+            String method = request.getMethod();
+            String path = request.getPath();
+            String query = request.getQuery();
+
+            MDC.put(MDC_METHOD, method);
+            MDC.put(MDC_PATH, path);
+            MDC.put(MDC_QUERY, query);
 
             String traceId = MDC.get(MDC_TRACE_ID);
             if (traceId == null) {
@@ -31,13 +35,19 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
             }
 
             String message = String.format("[REQUEST] %s %s%s [%s]",
-                    request.getMethod(),
-                    request.getPath(),
-                    request.getQuery().isEmpty() ? "" : "?" + request.getQuery(),
+                    method,
+                    path,
+                    query.isEmpty() ? "" : "?" + query,
                     traceId);
 
             String json = delegate.format(precorrelation, request);
-            return String.format("{\"level\":\"INFO\",\"message\":%s,%s", escape(message), json.substring(1));
+            json = normalizeJson(json);
+
+            return String.format("{\"level\":\"INFO\",\"message\":%s,\"method\":\"%s\",\"path\":\"%s\",%s",
+                    escape(message),
+                    method.replace("\"", "\\\""),
+                    path.replace("\"", "\\\""),
+                    json.substring(1));
         } catch (Exception e) {
             clearMDC();
             throw e;
@@ -47,6 +57,7 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
     @Override
     public String format(Correlation correlation, HttpResponse response) throws IOException {
         try {
+            String method = MDC.get(MDC_METHOD);
             String path = MDC.get(MDC_PATH);
             String query = MDC.get(MDC_QUERY);
             String traceId = MDC.get(MDC_TRACE_ID);
@@ -58,6 +69,7 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
                     traceId != null ? traceId : correlation.getId());
 
             String json = delegate.format(correlation, response);
+            json = normalizeJson(json);
 
             String level;
             int status = response.getStatus();
@@ -69,7 +81,12 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
                 level = "INFO";
             }
 
-            return String.format("{\"level\":\"%s\",\"message\":%s,%s", level, escape(message), json.substring(1));
+            return String.format("{\"level\":\"%s\",\"message\":%s,\"method\":\"%s\",\"path\":\"%s\",%s",
+                    level,
+                    escape(message),
+                    method != null ? method.replace("\"", "\\\"") : "UNKNOWN",
+                    path != null ? path.replace("\"", "\\\"") : "UNKNOWN",
+                    json.substring(1));
         } finally {
             MDC.clear();
         }
@@ -84,5 +101,9 @@ public class CustomJsonHttpLogFormatter implements HttpLogFormatter {
 
     private String escape(String s) {
         return "\"" + s.replace("\"", "\\\"") + "\"";
+    }
+
+    private String normalizeJson(String json) {
+        return json.replaceAll("[\\n\\r\\t]", "").replaceAll("\\s+", " ");
     }
 }

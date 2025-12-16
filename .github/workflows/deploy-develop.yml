@@ -16,31 +16,46 @@ jobs:
         with:
           java-version: 21
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew :kkambbak:bootJar -x test
+      - name: Run tests
+        run: ./gradlew test --no-daemon --parallel
 
-      - name: Upload build artifact
+      - name: Build with Gradle
+        run: ./gradlew :kkambbak:assemble :kkambbak-scheduler:assemble --no-daemon --parallel
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: kkambbak/build/libs/*.jar
+          path: |
+            kkambbak/build/libs/*.jar
+            kkambbak-scheduler/build/libs/*.jar
 
-  dockerize:
+      - name: Upload monitoring configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-configs
+          path: monitoring/
+
+  docker:
     runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout source code
         uses: actions/checkout@v5
 
-      - name: Download build artifact
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: kkambbak/build/libs
+          path: ./
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to DockerHub
         uses: docker/login-action@v3
@@ -48,8 +63,129 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop .
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: api
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak:develop
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Scheduler image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: scheduler
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/kkambbak-scheduler:develop
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Download monitoring configs
+        uses: actions/download-artifact@v4
+        with:
+          name: monitoring-configs
+          path: ./monitoring
+
+      - name: Upload deployment files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USERNAME }}
+          key: ${{ secrets.NCP_SSH_KEY }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          source: "docker-compose.yml,monitoring/*"
+          target: "/home/ubuntu/kkambbak/"
+          strip_components: 0
+
+      - name: Deploy to Naver Cloud
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USERNAME }}
+          key: ${{ secrets.NCP_SSH_KEY }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          script: |
+            set -e
+            cd /home/ubuntu/kkambbak
+
+            # .env 파일 생성
+            cat > .env <<'EOF'
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DRIVER=${{ secrets.DB_DRIVER }}
+            JPA_DDL_AUTO=${{ secrets.JPA_DDL_AUTO }}
+            JPA_DIALECT=${{ secrets.JPA_DIALECT }}
+            CONNECTION_INIT_SQL=${{ secrets.CONNECTION_INIT_SQL }}
+            REDIS_HOST=kkambbak-redis
+            REDIS_PORT=6379
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ACCESS_TOKEN_EXPIRATION=${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }}
+            JWT_REFRESH_TOKEN_EXPIRATION=${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            OAUTH2_REDIRECT_URI=${{ secrets.OAUTH2_REDIRECT_URI }}
+            AUTH_KEY=${{ secrets.AUTH_KEY }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            MAIL_SMTP_AUTH=true
+            MAIL_SMTP_STARTTLS_ENABLE=true
+            EMAIL_REDIRECT_URI=${{ secrets.EMAIL_REDIRECT_URI }}
+            EMAIL_OTP_EXPIRY_MINUTES=${{ secrets.EMAIL_OTP_EXPIRY_MINUTES }}
+            R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+            R2_ACCESS_KEY=${{ secrets.R2_ACCESS_KEY }}
+            R2_SECRET_KEY=${{ secrets.R2_SECRET_KEY }}
+            R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            R2_PUBLIC_DOMAIN=${{ secrets.R2_PUBLIC_DOMAIN }}
+            DEFAULT_PROFILE_IMAGE=${{ secrets.DEFAULT_PROFILE_IMAGE }}
+            DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK }}
+            DISCORD_SCHEDULER_WEBHOOK_URL=${{ secrets.DISCORD_SCHEDULER_WEBHOOK_URL }}
+            DISCORD_PAYMENT_WEBHOOK_URL=${{ secrets.DISCORD_PAYMENT_WEBHOOK_URL }}
+            KAKAO_PAY_CLIENT_ID=${{ secrets.KAKAO_PAY_CLIENT_ID }}
+            KAKAO_PAY_CLIENT_SECRET=${{ secrets.KAKAO_PAY_CLIENT_SECRET }}
+            KAKAO_PAY_SECRET_KEY=${{ secrets.KAKAO_PAY_SECRET_KEY }}
+            KAKAO_PAY_CID=${{ secrets.KAKAO_PAY_CID }}
+            KAKAO_PAY_SUBSCRIPTION_CID=${{ secrets.KAKAO_PAY_SUBSCRIPTION_CID }}
+            KAKAO_PAY_API_URL=${{ secrets.KAKAO_PAY_API_URL }}
+            KAKAO_PAY_APPROVAL_URL=${{ secrets.KAKAO_PAY_APPROVAL_URL }}
+            KAKAO_PAY_SUCCESS_URL=${{ secrets.KAKAO_PAY_SUCCESS_URL }}
+            KAKAO_PAY_FAIL_URL=${{ secrets.KAKAO_PAY_FAIL_URL }}
+            GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
+            GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            GRAFANA_URL=${{ secrets.GRAFANA_URL }}
+            PROMETHEUS_URL=${{ secrets.PROMETHEUS_URL }}
+            IMAGE_TAG=develop
+            EOF
+
+            # 로그 디렉토리 생성
+            mkdir -p logs
+
+            # Docker 로그인
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+            # docker-compose로 배포
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+
+            # 사용하지 않는 이미지 정리
+            docker image prune -af
 
       - name: Notify Discord (배포 성공)
         if: success()

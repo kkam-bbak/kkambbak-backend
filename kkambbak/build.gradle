@@ -19,14 +19,35 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2', 'io.jsonwebtoken:jjwt-jackson:0.11.2'
 
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 	// logbook
 	implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
+
+	// image processing
+	implementation 'com.sksamuel.scrimage:scrimage-core:4.1.1'
+	implementation 'com.sksamuel.scrimage:scrimage-webp:4.1.1'
+
+	// ImageIO
+	implementation 'com.twelvemonkeys.imageio:imageio-core:3.10.1'
+	implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.10.1'
+	implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.10.1'
+	implementation 'com.twelvemonkeys.imageio:imageio-metadata:3.10.1'
 
 	// rest docs
 	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 	testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.18.2'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+
+    //romanized
+    implementation 'net.crizin:korean-romanizer:2.0.1'
+
+
+    //ffmpeg
+    implementation 'net.bramp.ffmpeg:ffmpeg:0.6.2'
 }
 
 ext {

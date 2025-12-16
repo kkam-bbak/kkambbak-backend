@@ -1,4 +1,69 @@
 spring:
-  config:
-    activate:
-      on-profile: client
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:test-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:test-google-client-secret}
+            scope:
+              - email
+              - profile
+
+cloudflare:
+  r2:
+    account-id: ${R2_ACCOUNT_ID:test-account-id}
+    access-key: ${R2_ACCESS_KEY:test-access-key}
+    secret-key: ${R2_SECRET_KEY:test-secret-key}
+    bucket-name: ${R2_BUCKET_NAME:kkambbak-images}
+    public-domain: ${R2_PUBLIC_DOMAIN:https://pub-test.r2.dev}
+
+discord:
+  scheduler:
+    webhook:
+      url: ${DISCORD_SCHEDULER_WEBHOOK_URL:}
+  payment:
+    webhook:
+      url: ${DISCORD_PAYMENT_WEBHOOK_URL:}
+
+kakao:
+  pay:
+    client-id: ${KAKAO_PAY_CLIENT_ID:test_client_id}
+    client-secret: ${KAKAO_PAY_CLIENT_SECRET:test_client_secret}
+    secret-key: ${KAKAO_PAY_SECRET_KEY:test_secret_key}
+    cid: ${KAKAO_PAY_CID:TC0ONETIME}
+    subscription-cid: ${KAKAO_PAY_SUBSCRIPTION_CID:TCSUBSCRIP}
+    api-url: ${KAKAO_PAY_API_URL:https://test.kakao.com}
+    callback:
+      approval-url: ${KAKAO_PAY_APPROVAL_URL:https://kkambbak.duckdns.org/api/v1/payments/approve}
+      success-url: ${KAKAO_PAY_SUCCESS_URL:https://kkam-bbak.pages.dev/payment/checkout/result?r=success}
+      cancel-url: ${KAKAO_PAY_FAIL_URL:https://kkam-bbak.pages.dev/payment/checkout/result?r=fail}
+      fail-url: ${KAKAO_PAY_FAIL_URL:https://kkam-bbak.pages.dev/payment/checkout/result?r=fail}
+
+
+openai:
+  api:
+    base-url: ${OPENAI_API_BASE_URL:https://api.openai.com/v1}
+    key: ${OPENAI_API_KEY:}
+
+  timeout:
+    connect-ms: 15000
+    read-s: 120
+    write-s: 10
+
+
+azure:
+  api:
+    key: ${AZURE_API_KEY:dummy_azure_key}

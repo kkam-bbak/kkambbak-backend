@@ -37,9 +37,24 @@ public class LogbookConfig {
                             path.endsWith(".png") ||
                             path.endsWith(".ico") ||
                             path.endsWith(".html") ||
+                            path.equals("/") ||
+                            path.equals("/robots.txt") ||
                             path.equals("/favicon-16x16.png") ||
                             path.equals("/favicon-32x32.png") ||
-                            path.equals("/swagger-ui.html")
+                            path.equals("/swagger-ui.html") ||
+                            // Bot attack and vulnerability scanning paths
+                            path.contains("/.git") ||
+                            path.contains("/setup.cgi") ||
+                            path.contains("/docker") ||
+                            path.contains("/ReportServer") ||
+                            path.contains("/geoserver") ||
+                            path.contains("/sitemap.xml") ||
+                            path.contains("MGLNDD") ||
+                            path.contains("/manager") ||
+                            path.contains("/backup") ||
+                            path.contains("/bin") ||
+                            path.endsWith(".xml") ||
+                            path.endsWith(".env")
             );
         };
 
@@ -60,12 +75,34 @@ public class LogbookConfig {
 
         @Override
         public void write(Precorrelation precorrelation, String request) {
-            logger.trace(request);
+            logger.info(request);
         }
 
         @Override
         public void write(Correlation correlation, String response) {
-            logger.trace(response);
+            String level = extractLevel(response);
+            switch (level) {
+                case "ERROR":
+                    logger.error(response);
+                    break;
+                case "WARN":
+                    logger.warn(response);
+                    break;
+                default:
+                    logger.info(response);
+            }
+        }
+
+        private String extractLevel(String json) {
+            int levelStart = json.indexOf("\"level\":\"");
+            if (levelStart != -1) {
+                levelStart += 9;
+                int levelEnd = json.indexOf("\"", levelStart);
+                if (levelEnd != -1) {
+                    return json.substring(levelStart, levelEnd);
+                }
+            }
+            return "INFO";
         }
     }
 

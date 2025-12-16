@@ -1,0 +1,270 @@
+package com.kkambbak.scheduler.domain.payment.service;
+
+import com.kkambbak.client.discord.DiscordClient;
+import com.kkambbak.client.mail.service.MailSender;
+import com.kkambbak.client.payment.service.KakaoPayService;
+import com.kkambbak.core.entity.payment.PayHistory;
+import com.kkambbak.core.entity.payment.Subscription;
+import com.kkambbak.core.entity.payment.enums.PaymentMethod;
+import com.kkambbak.core.entity.payment.enums.PaymentStatus;
+import com.kkambbak.core.entity.payment.enums.SubscriptionStatus;
+import com.kkambbak.core.entity.user.User;
+import com.kkambbak.core.repository.payment.PayHistoryRepository;
+import com.kkambbak.core.repository.payment.SubscriptionRepository;
+import com.kkambbak.core.service.UserRoleService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class SubscriptionBatchService {
+
+    private final SubscriptionRepository subscriptionRepository;
+    private final PayHistoryRepository payHistoryRepository;
+    private final KakaoPayService kakaoPayService;
+    private final DiscordClient discordClient;
+    private final UserRoleService userRoleService;
+    private final MailSender mailSender;
+
+    /**
+     * 내일 갱신 대상 조회 (전날 오후 12시에 처리하기 위해 내일 날짜로 조회)
+     */
+    public List<Subscription> getExpireTargets() {
+        return subscriptionRepository.findDueForRenewal(
+                LocalDateTime.now().plusDays(1),
+                SubscriptionStatus.ACTIVE
+        );
+    }
+
+    /**
+     * 오늘 만료 대상 재시도 조회 (만료 당일 자정 실행)
+     */
+    public List<Subscription> getRetryTargets() {
+        return subscriptionRepository.findDueForRenewal(
+                LocalDateTime.now(),
+                SubscriptionStatus.ACTIVE
+        );
+    }
+
+    @Transactional
+    public void processAllRenewals(List<Subscription> subscriptions) {
+        for (Subscription subscription : subscriptions) {
+            try {
+                processSubscriptionRenewal(subscription);
+            } catch (Exception e) {
+                log.error("[SubscriptionRenewal] Failed to process subscription renewal - " +
+                        "subscriptionId: {}, userId: {}, error: {}",
+                        subscription.getId(), subscription.getUserId(), e.getMessage(), e);
+            }
+        }
+    }
+
+    @Transactional
+    public void processSubscriptionRenewal(Subscription subscription) {
+        try {
+            Map<String, Object> kakaoResponse = kakaoPayService.payWithSubscription(
+                    subscription.getBillingKey(),
+                    generateOrderId(subscription),
+                    String.valueOf(subscription.getUserId()),
+                    subscription.getPlan().getName(),
+                    1,
+                    subscription.getPlan().getPrice().intValue(),
+                    0
+            );
+
+            handlePaymentSuccess(subscription, kakaoResponse);
+
+        } catch (Exception e) {
+            log.error("[SubscriptionRenewal] KakaoPay API call failed - subscriptionId: {}, error: {}",
+                    subscription.getId(), e.getMessage());
+            handlePaymentFailure(subscription, e);
+        }
+    }
+
+    private void handlePaymentSuccess(Subscription subscription, Map<String, Object> kakaoResponse) {
+        try {
+            String tid = (String) kakaoResponse.get("tid");
+            String aid = (String) kakaoResponse.get("aid");
+
+            Map<String, Object> paymentData = new HashMap<>();
+            paymentData.put("sid", subscription.getBillingKey());
+            paymentData.put("orderId", generateOrderId(subscription));
+            paymentData.put("aid", aid);
+            paymentData.put("tid", tid);
+            paymentData.putAll(kakaoResponse);
+
+            PayHistory payHistory = PayHistory.builder()
+                    .userId(subscription.getUserId())
+                    .subscriptionId(subscription.getId())
+                    .paymentMethod(PaymentMethod.KAKAO)
+                    .amount(subscription.getPlan().getPrice())
+                    .status(PaymentStatus.COMPLETED)
+                    .transactionId(tid)
+                    .paymentData(paymentData)
+                    .paidAt(LocalDateTime.now())
+                    .build();
+
+            payHistoryRepository.save(payHistory);
+
+            LocalDateTime newEndDate = subscription.getEndDate().plusMonths(1);
+            subscription.setEndDate(newEndDate);
+            subscriptionRepository.save(subscription);
+
+            try {
+                User user = userRoleService.getUser(subscription.getUserId());
+                mailSender.sendPaymentSuccessEmail(
+                        user.getEmail(),
+                        user.getName(),
+                        newEndDate,
+                        subscription.getPlan().getPrice(),
+                        PaymentMethod.KAKAO.getDescription(),
+                        subscription.getPlan().getName()
+                );
+            } catch (Exception emailError) {
+                log.warn("[SubscriptionRenewal] Failed to send email success notification - subscriptionId: {}",
+                        subscription.getId(), emailError);
+            }
+
+            try {
+                discordClient.sendSubscriptionRenewalSuccess(
+                        subscription.getUserId(),
+                        subscription.getId(),
+                        subscription.getPlan().getPrice(),
+                        subscription.getPlan().getName(),
+                        newEndDate
+                );
+            } catch (Exception discordError) {
+                log.warn("[SubscriptionRenewal] Failed to send Discord success notification - subscriptionId: {}",
+                        subscription.getId(), discordError);
+            }
+
+        } catch (Exception e) {
+            log.error("[SubscriptionRenewal] Failed to handle payment success - subscriptionId: {}",
+                    subscription.getId(), e);
+            throw new RuntimeException("Payment success handling failed", e);
+        }
+    }
+
+    private void handlePaymentFailure(Subscription subscription, Exception exception) {
+        try {
+            log.warn("[SubscriptionRenewal] Payment failure handling - subscriptionId: {}, error: {}",
+                    subscription.getId(), exception.getMessage());
+            Map<String, Object> paymentData = new HashMap<>();
+            paymentData.put("sid", subscription.getBillingKey());
+            paymentData.put("orderId", generateOrderId(subscription));
+            paymentData.put("errorMessage", exception.getMessage());
+            paymentData.put("retryCount", 0);
+
+            PayHistory payHistory = PayHistory.builder()
+                    .userId(subscription.getUserId())
+                    .subscriptionId(subscription.getId())
+                    .paymentMethod(PaymentMethod.KAKAO)
+                    .amount(subscription.getPlan().getPrice())
+                    .status(PaymentStatus.FAILED)
+                    .paymentData(paymentData)
+                    .build();
+
+            payHistoryRepository.save(payHistory);
+
+            try {
+                User user = userRoleService.getUser(subscription.getUserId());
+                mailSender.sendPaymentFailureEmail(
+                        user.getEmail(),
+                        user.getName(),
+                        LocalDateTime.now(),
+                        subscription.getPlan().getPrice(),
+                        PaymentMethod.KAKAO.getDescription(),
+                        subscription.getPlan().getName(),
+                        exception.getMessage()
+                );
+            } catch (Exception emailError) {
+                log.warn("[SubscriptionRenewal] Failed to send email failure notification - subscriptionId: {}",
+                        subscription.getId(), emailError);
+            }
+
+            try {
+                discordClient.sendSubscriptionRenewalFailure(
+                        subscription.getUserId(),
+                        subscription.getId(),
+                        exception.getMessage(),
+                        subscription.getPlan().getName()
+                );
+            } catch (Exception discordError) {
+                log.warn("[SubscriptionRenewal] Failed to send Discord failure notification - subscriptionId: {}",
+                        subscription.getId(), discordError);
+            }
+
+        } catch (Exception e) {
+            log.error("[SubscriptionRenewal] Failed to handle payment failure - subscriptionId: {}",
+                    subscription.getId(), e);
+        }
+    }
+
+    private String generateOrderId(Subscription subscription) {
+        return "renewal_" + subscription.getId() + "_" + System.currentTimeMillis();
+    }
+
+    /**
+     * 만료된 구독 조회 (endDate < 현재시간)
+     */
+    public List<Subscription> getExpiredTargets() {
+        List<Subscription> activeExpired = subscriptionRepository.findExpiredSubscriptions(
+                LocalDateTime.now(),
+                SubscriptionStatus.ACTIVE
+        );
+        List<Subscription> cancelledExpired = subscriptionRepository.findExpiredSubscriptions(
+                LocalDateTime.now(),
+                SubscriptionStatus.CANCELLED
+        );
+
+        activeExpired.addAll(cancelledExpired);
+        return activeExpired;
+    }
+
+    /**
+     * 만료된 구독 일괄 처리
+     */
+    @Transactional
+    public void processAllExpiries(List<Subscription> subscriptions) {
+        for (Subscription subscription : subscriptions) {
+            try {
+                processSubscriptionExpiry(subscription);
+            } catch (Exception e) {
+                log.error("[SubscriptionExpiry] Failed to process subscription expiry - " +
+                        "subscriptionId: {}, userId: {}, error: {}",
+                        subscription.getId(), subscription.getUserId(), e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * 개별 구독 만료 처리
+     */
+    @Transactional
+    public void processSubscriptionExpiry(Subscription subscription) {
+        try {
+            log.info("[SubscriptionExpiry] Processing expiry - subscriptionId: {}, userId: {}, status: {}, endDate: {}",
+                    subscription.getId(), subscription.getUserId(), subscription.getStatus(), subscription.getEndDate());
+
+            subscription.expire();
+            subscriptionRepository.save(subscription);
+
+            userRoleService.downgradeRole(subscription.getUserId());
+
+            log.info("[SubscriptionExpiry] Subscription expired - subscriptionId: {}, userId: {}, expiredAt: {}",
+                    subscription.getId(), subscription.getUserId(), subscription.getExpiredAt());
+
+        } catch (Exception e) {
+            log.error("[SubscriptionExpiry] Failed to process subscription expiry - subscriptionId: {}",
+                    subscription.getId(), e);
+        }
+    }
+}
